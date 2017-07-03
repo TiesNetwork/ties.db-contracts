@@ -1,0 +1,17 @@
+{
+  "name": "db-contract-user-registration",
+  "version": "1.0.0",
+  "description": "TiesDB UserRegistry contract",
+  "main": "-",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dmitry Kochin <k@ties.network>",
+  "license": "ISC",
+  "devDependencies": {
+    "ethereumjs-util": "^5.1.2"
+  }
+}
