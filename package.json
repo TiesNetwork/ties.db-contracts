@@ -1,5 +1,5 @@
 {
-  "name": "db-contract-user-registration",
+  "name": "db-contracts",
   "version": "1.0.0",
   "description": "TiesDB UserRegistry contract",
   "main": "-",

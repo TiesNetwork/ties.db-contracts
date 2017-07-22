@@ -2,11 +2,11 @@ pragma solidity ^0.4.11;
 
 
 import "zeppelin/contracts/token/ERC20.sol";
-
+import "./include/ERC23PayableReceiver.sol";
 
 // This contract manages all user deposits for TiesDB
 
-contract UserRegistry {
+contract Registry is ERC23PayableReceiver {
 	/**
      * TIE tokens deposits
      */
@@ -24,7 +24,7 @@ contract UserRegistry {
 	mapping (address => User) public users;
     ERC20 token;
 
-    function UserRegistry(address _token){
+    function Registry(address _token){
         token = ERC20(_token);
     }
 
@@ -32,6 +32,10 @@ contract UserRegistry {
         //If there is no allowance or not enough tokens it will throw
         users[msg.sender].deposit += amount;
         token.transferFrom(msg.sender, address(this), amount);
+    }
+
+    function addDeposit(address from, uint amount) internal {
+        users[from].deposit += amount;
     }
 
     /// Gets the deposit of the specified user
@@ -59,7 +63,7 @@ contract UserRegistry {
         }
 
         // Check the digital signature of the cheque.
-        bytes32 hash = sha3(issuer, beneficiary, amount);
+        bytes32 hash = sha3("TIE cheque", issuer, beneficiary, amount);
         if(issuer != ecrecover(hash, sig_v, sig_r, sig_s)){
             Error("Signature check failed");
             return 0;
@@ -89,4 +93,9 @@ contract UserRegistry {
         return tosend;
     }
 
+    function tokenFallback(address _from, uint _value, bytes _data) payable{
+        require(msg.sender == address(token));
+        require(msg.value == 0); //Do not accept ether
+        addDeposit(_from, _value);
+    }
 }
