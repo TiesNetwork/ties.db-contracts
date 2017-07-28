@@ -10,18 +10,19 @@ import './ERC23PayableReceiver.sol';
  */
 contract ERC23PayableToken is BasicToken, ERC23{
     // Function that is called when a user or another contract wants to transfer funds .
-    function transfer(address to, uint value, bytes data) {
+    function transfer(address to, uint value, bytes data){
         transferAndPay(to, value, data);
     }
 
     // Standard function transfer similar to ERC20 transfer with no _data .
     // Added due to backwards compatibility reasons .
-    function transfer(address to, uint value) {
+    function transfer(address to, uint value) returns (bool){
         bytes memory empty;
         transfer(to, value, empty);
+        return true;
     }
 
-    function transferAndPay(address to, uint value, bytes data) payable{
+    function transferAndPay(address to, uint value, bytes data) payable {
         // Standard function transfer similar to ERC20 transfer with no _data .
         // Added due to backwards compatibility reasons .
         uint codeLength;
@@ -38,7 +39,7 @@ contract ERC23PayableToken is BasicToken, ERC23{
             ERC23PayableReceiver receiver = ERC23PayableReceiver(to);
             receiver.tokenFallback.value(msg.value)(msg.sender, value, data);
         }else if(msg.value > 0){
-            assert(to.send(msg.value));
+            to.transfer(msg.value);
         }
 
         Transfer(msg.sender, to, value);

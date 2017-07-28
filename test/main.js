@@ -21,7 +21,10 @@ contract('Registry', async function (accounts) {
     const cheque1 = zeroesBN.mul(new EU.BN(8));
 
     before(async function(){
-        tokenContract = await TieToken.new();
+        tokenContract = await TieToken.new(accounts[3]);
+        await tokenContract.setMinter(accounts[0], {from: accounts[3]});
+        await tokenContract.enableTransfer(true, {from: accounts[3]});
+
         await tokenContract.mint(accounts[0], 1000*zeroes);
         await tokenContract.mint(accounts[1], 2000*zeroes);
 
@@ -80,7 +83,10 @@ contract('Invitation', async function (accounts) {
     let invitation;
 
     before(async function(){
-        tokenContract = await TieToken.new();
+        tokenContract = await TieToken.new(accounts[3]);
+        await tokenContract.setMinter(accounts[0], {from: accounts[3]});
+        await tokenContract.enableTransfer(true, {from: accounts[3]});
+
         await tokenContract.mint(accounts[0], 1000*zeroes);
         await tokenContract.mint(accounts[1], 2000*zeroes);
 

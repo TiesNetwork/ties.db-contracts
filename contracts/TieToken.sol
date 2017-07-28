@@ -16,6 +16,8 @@ contract TieToken is MintableToken, ERC23PayableToken {
     string public constant symbol = "TIE";
     uint public constant decimals = 18;
 
+    bool public transferEnabled = false;
+
     //The cap is 200 mln TIEs
     uint private constant CAP = 200*(10**6)*(10**decimals);
 
@@ -29,5 +31,16 @@ contract TieToken is MintableToken, ERC23PayableToken {
         transferOwnership(multisigOwner);
     }
 
+    /**
+    * Overriding all transfers to check if transfers are enabled
+    */
+    function transferAndPay(address to, uint value, bytes data) payable{
+        require(transferEnabled);
+        super.transferAndPay(to, value, data);
+    }
+
+    function enableTransfer(bool enabled) onlyOwner{
+        transferEnabled = enabled;
+    }
 
 }
