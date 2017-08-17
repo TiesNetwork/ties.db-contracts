@@ -5,29 +5,32 @@ import "browser/TiesDBAPI.sol";
 library TLType {
 
     struct Field {
+        bool set;
+        uint256 fmi;
         Table t;
         string name;
-        uint256 fmi;
     }
 
     struct Table {
+        bool set;
+        uint256 tmi;
         Tablespace ts;
         string name;
-        uint256 tmi;
-        mapping(bytes32 => Field) fm;
         bytes32[] fmis;
+        mapping(bytes32 => Field) fm;
     }
 
     struct Tablespace {
+        bool set;
+        uint256 tsmi;
         TiesDBRestrictions rs;
         string name;
-        uint256 tsmi;
-        mapping(bytes32 => Table) tm;
         bytes32[] tmis;
+        mapping(bytes32 => Table) tm;
     }
 
     struct Storage {
-        mapping(bytes32 => Tablespace) tsm;
         bytes32[] tsmis;
+        mapping(bytes32 => Tablespace) tsm;
     }
 }

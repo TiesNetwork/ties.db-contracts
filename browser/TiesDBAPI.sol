@@ -1,6 +1,6 @@
 pragma solidity ^0.4.15;
 
-interface TiesDBRestrictions {
+contract TiesDBRestrictions {
     function canCreateTablespace(string tsName, address owner) public constant returns (bool);
     function canDeleteTablespace(string tsName, address owner) public constant returns (bool);
     function canCreateTable(string tsName, string tName, address owner) public constant returns (bool);
