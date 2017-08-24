@@ -1,7 +1,7 @@
 const testRpc = require('./helpers/testRpc');
 
 let TieToken = artifacts.require("./TieToken.sol");
-let Ico = artifacts.require("./Ico.sol");
+let Ico = artifacts.require("./TokenSale.sol");
 
 const decimals = 18;
 const zeroes = Math.pow(10, decimals);
@@ -14,15 +14,15 @@ let secrets = [
     "0xd3b6b98613ce7bd4636c5c98cc17afb0403d690f9c2b646726e08334583de101", //accounts[3]
 ];
 
-contract('Ico', async function (accounts) {
+contract('TokenSale', async function (accounts) {
     let tokenContract;
-    let icoContract;
+    let saleContract;
     let initialMultisigBalance;
 
     before(async function(){
         tokenContract = await TieToken.new(accounts[2]);
-        icoContract = await Ico.new(tokenContract.address, accounts[2], accounts[3]);
-        await tokenContract.setMinter(icoContract.address, {from: accounts[2]});
+        saleContract = await Ico.new(tokenContract.address, accounts[2], accounts[3], accounts[3]);
+        await tokenContract.setMinter(saleContract.address, {from: accounts[2]});
     });
 
     it("should not mint by owner", async function () {
@@ -32,45 +32,45 @@ contract('Ico', async function (accounts) {
     });
 
     it("should be valid bonuses", async function() {
-    	assert.equal(20, (await icoContract.getBonus(web3.toWei(             0, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal(17, (await icoContract.getBonus(web3.toWei(  14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal(15, (await icoContract.getBonus(web3.toWei(2*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal(12, (await icoContract.getBonus(web3.toWei(3*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal(10, (await icoContract.getBonus(web3.toWei(4*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal( 8, (await icoContract.getBonus(web3.toWei(5*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal( 6, (await icoContract.getBonus(web3.toWei(6*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal( 4, (await icoContract.getBonus(web3.toWei(7*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal( 2, (await icoContract.getBonus(web3.toWei(8*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
-    	assert.equal( 0, (await icoContract.getBonus(web3.toWei(9*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal(20, (await saleContract.getBonus(web3.toWei(             0, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal(17, (await saleContract.getBonus(web3.toWei(  14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal(15, (await saleContract.getBonus(web3.toWei(2*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal(12, (await saleContract.getBonus(web3.toWei(3*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal(10, (await saleContract.getBonus(web3.toWei(4*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal( 8, (await saleContract.getBonus(web3.toWei(5*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal( 6, (await saleContract.getBonus(web3.toWei(6*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal( 4, (await saleContract.getBonus(web3.toWei(7*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal( 2, (await saleContract.getBonus(web3.toWei(8*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
+    	assert.equal( 0, (await saleContract.getBonus(web3.toWei(9*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
     });
 
     it("should not mint by ico before opening", async function() {
         await testRpc.assertThrow('ico buy should have thrown', async () => {
-            await icoContract.buy(accounts[1], {value: web3.toWei(100, 'ether')});
+            await saleContract.buy(accounts[1], {value: web3.toWei(100, 'ether')});
         });
     });
 
     it("should not open by not an owner", async function() {
         await testRpc.assertThrow('ico buy should have thrown', async () => {
-            await icoContract.open(true);
+            await saleContract.open(true);
         });
     });
 
     it("should open successfully by owner", async function() {
-        await icoContract.open(true, {from: accounts[2]});
-        assert.ok(await icoContract.isOpen(), 'ICO should have been opened');
+        await saleContract.open(true, {from: accounts[2]});
+        assert.ok(await saleContract.isOpen(), 'ICO should have been opened');
         initialMultisigBalance = await web3.eth.getBalance(accounts[2]);
     });
 
     it("should mint by ico", async function() {
-        await icoContract.buy(accounts[1], {value: web3.toWei(100, 'ether')});
+        await saleContract.buy(accounts[1], {value: web3.toWei(100, 'ether')});
         let balance = await tokenContract.balanceOf(accounts[1]);
         let shouldbe = web3.toWei(48000, 'ether');
         assert.equal(balance.toNumber(), shouldbe, "There should be 48000 tokens");
     });
 
     it("should buy with fallback", async function() {
-        await web3.eth.sendTransaction({from: accounts[0], to: icoContract.address, value: web3.toWei(29000, 'ether')});
+        await web3.eth.sendTransaction({from: accounts[0], to: saleContract.address, value: web3.toWei(29000, 'ether')});
         let balance = await tokenContract.balanceOf(accounts[0]);
         let shouldbe = web3.toWei(13920000, 'ether');
         assert.equal(balance.toNumber(), shouldbe, "There should be 13,920,000 tokens");
@@ -78,12 +78,12 @@ contract('Ico', async function (accounts) {
 
     it("should not be able to buyAlt if non-authority", async function() {
         await testRpc.assertThrow('token transfer should have thrown', async () => {
-            await icoContract.buyAlt(accounts[3], web3.toWei(100, 'ether'), {from: accounts[1]});
+            await saleContract.buyAlt(accounts[3], web3.toWei(100, 'ether'), "txHash", {from: accounts[1]});
         });
     });
 
     it("should buy with border crossing with buyAlt", async function() {
-        await icoContract.buyAlt(accounts[3], web3.toWei(100, 'ether'), {from: accounts[3]});
+        await saleContract.buyAlt(accounts[3], web3.toWei(100, 'ether'), "txHash", {from: accounts[3]});
         //There were 32000 tokens left in 20% interval. We sell them for 66.(6) ether
         //and 33.(3) we spend on the next 17% interval
         let balance = await tokenContract.balanceOf(accounts[3]);
@@ -97,9 +97,9 @@ contract('Ico', async function (accounts) {
     });
 
     it("should buy with 2 borders crossing", async function() {
-        await web3.eth.sendTransaction({from: accounts[2], to: icoContract.address, value: web3.toWei(70000, 'ether')});
+        await web3.eth.sendTransaction({from: accounts[2], to: saleContract.address, value: web3.toWei(70000, 'ether')});
         //We have now crossed 17, 15 and 12 bonus intervals.
-        assert.equal(12, (await icoContract.getCurrentBonus()).toNumber(), "We should be at 12% bonus now");
+        assert.equal(12, (await saleContract.getCurrentBonus()).toNumber(), "We should be at 12% bonus now");
 
         let balance = await tokenContract.balanceOf(accounts[2]);
         let base = zeroesBN.mul(web3.toWei(70000, 'ether')).div(web3.toWei(0.0025, 'ether'));
@@ -110,7 +110,7 @@ contract('Ico', async function (accounts) {
 
     it("should not exceed the cap", async function() {
         await testRpc.assertThrow('ico buy should have thrown', async () => {
-            await icoContract.buy(accounts[0], {value: web3.toWei(230000, 'ether')});
+            await saleContract.buy(accounts[0], {value: web3.toWei(230000, 'ether')});
         });
     });
 
@@ -122,14 +122,14 @@ contract('Ico', async function (accounts) {
 
     it("should not be able to finalize for non-owner", async function() {
         await testRpc.assertThrow('token transfer should have thrown', async () => {
-            await icoContract.finalize();
+            await saleContract.finalize();
         });
     });
 
     it("should be able to finalize", async function() {
         let prevBalance = await tokenContract.balanceOf(accounts[2]);
 
-        await icoContract.finalize({from: accounts[2]});
+        await saleContract.finalize({from: accounts[2]});
         assert.ok(prevBalance.lt(await tokenContract.balanceOf(accounts[2])), 'The rest of tokens should go to multisig');
 
         let total = await tokenContract.totalSupply();
