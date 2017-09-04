@@ -18,7 +18,8 @@ contract('Registry', async function (accounts) {
     let tokenContract;
     let registry;
 
-    const cheque1 = zeroesBN.mul(new EU.BN(8));
+    //Cheque should be web3 BigNumber
+    const cheque1 = web3.toBigNumber(8).mul(zeroesBN.toString());
 
     before(async function(){
         tokenContract = await TieToken.new(accounts[3]);
@@ -49,7 +50,7 @@ contract('Registry', async function (accounts) {
     it("should pay with cheque", async function() {
         let issuer = EU.setLength(EU.toBuffer(accounts[0]), 20);
         let beneficiary = EU.setLength(EU.toBuffer(accounts[2]), 20);
-        let amount = EU.setLength(EU.toBuffer(cheque1), 32);
+        let amount = EU.setLength(EU.toBuffer(new EU.BN(cheque1.toString())), 32);
         let sha3hash = EU.sha3(Buffer.concat([EU.toBuffer("TIE cheque"), issuer, beneficiary, amount]));
         let sig = EU.ecsign(sha3hash, EU.toBuffer(secrets[0]));
 
