@@ -18,7 +18,7 @@ contract TokenSale is Ownable {
     uint private constant SALE_CAP = 140*millions;
     uint private constant BONUS_STEP = 14*millions;
 
-    uint private constant PRICE = 0.0025 ether;
+    uint public price = 0.0008 ether;
 
     // Events
     // ======
@@ -28,6 +28,7 @@ contract TokenSale is Ownable {
     event RunSale();
     event PauseSale();
     event FinishSale();
+    event PriceSet(uint weiPerTIE);
 
     // State variables
     // ===============
@@ -78,10 +79,10 @@ contract TokenSale is Ownable {
             //Bonus at the current interval
             uint bonus = 100 + getBonus(totalSupply);
             //The cost of the entire remainder of this interval
-            uint gapCost = gap*(PRICE*100)/fractions/bonus;
+            uint gapCost = gap*(price*100)/fractions/bonus;
             if(gapCost >= etherVal){
                 //If the gap is large enough just sell the necessary amount of tokens
-                tokens += etherVal.mul(bonus).mul(fractions)/(PRICE*100);
+                tokens += etherVal.mul(bonus).mul(fractions)/(price*100);
                 break;
             }else{
                 //If the gap is too small sell it and diminish the price by its cost for the next iteration
@@ -144,6 +145,11 @@ contract TokenSale is Ownable {
 
     function setRobot(address _robot) onlyAuthority {
         authority = _robot;
+    }
+
+    function setPrice(uint etherPerTie) onlyAuthority {
+        price = etherPerTie;
+        PriceSet(price);
     }
 
     // SALE state management: start / pause / finish

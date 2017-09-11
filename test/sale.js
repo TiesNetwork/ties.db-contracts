@@ -1,7 +1,7 @@
 const testRpc = require('./helpers/testRpc');
 
 let TieToken = artifacts.require("./TieToken.sol");
-let Ico = artifacts.require("./TokenSale.sol");
+let TokenSale = artifacts.require("./TokenSale.sol");
 
 const decimals = 18;
 const zeroes = Math.pow(10, decimals);
@@ -21,8 +21,14 @@ contract('TokenSale', async function (accounts) {
 
     before(async function(){
         tokenContract = await TieToken.new(accounts[2]);
-        saleContract = await Ico.new(tokenContract.address, accounts[2], accounts[3], accounts[3]);
+        saleContract = await TokenSale.new(tokenContract.address, accounts[2], accounts[3], accounts[3]);
         await tokenContract.setMinter(saleContract.address, {from: accounts[2]});
+    });
+
+    it("should set price", async function () {
+        await saleContract.setPrice(web3.toWei(0.0025, 'ether'), {from: accounts[3]});
+        let price = await saleContract.price();
+        assert.equal(price.toString(), web3.toWei(0.0025, 'ether'));
     });
 
     it("should not mint by owner", async function () {
@@ -44,25 +50,25 @@ contract('TokenSale', async function (accounts) {
     	assert.equal( 0, (await saleContract.getBonus(web3.toWei(9*14*1000*1000, 'ether'))).toNumber(), "1st bonus should be valid");
     });
 
-    it("should not mint by ico before opening", async function() {
-        await testRpc.assertThrow('ico buy should have thrown', async () => {
+    it("should not mint by TokenSale before opening", async function() {
+        await testRpc.assertThrow('TokenSale buy should have thrown', async () => {
             await saleContract.buy(accounts[1], {value: web3.toWei(100, 'ether')});
         });
     });
 
     it("should not open by not an owner", async function() {
-        await testRpc.assertThrow('ico buy should have thrown', async () => {
+        await testRpc.assertThrow('TokenSale buy should have thrown', async () => {
             await saleContract.open(true);
         });
     });
 
     it("should open successfully by owner", async function() {
         await saleContract.open(true, {from: accounts[2]});
-        assert.ok(await saleContract.isOpen(), 'ICO should have been opened');
+        assert.ok(await saleContract.isOpen(), 'TokenSale should have been opened');
         initialMultisigBalance = await web3.eth.getBalance(accounts[2]);
     });
 
-    it("should mint by ico", async function() {
+    it("should mint by TokenSale", async function() {
         await saleContract.buy(accounts[1], {value: web3.toWei(100, 'ether')});
         let balance = await tokenContract.balanceOf(accounts[1]);
         let shouldbe = web3.toWei(48000, 'ether');
@@ -109,7 +115,7 @@ contract('TokenSale', async function (accounts) {
     });
 
     it("should not exceed the cap", async function() {
-        await testRpc.assertThrow('ico buy should have thrown', async () => {
+        await testRpc.assertThrow('TokenSale buy should have thrown', async () => {
             await saleContract.buy(accounts[0], {value: web3.toWei(230000, 'ether')});
         });
     });
