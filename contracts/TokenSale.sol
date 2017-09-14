@@ -148,6 +148,8 @@ contract TokenSale is Ownable {
     }
 
     function setPrice(uint etherPerTie) onlyAuthority {
+        //Ether is not expected to rate less than $96 and more than $480 during token sale
+        require(0.0005 ether <= price && price <= 0.0025 ether);
         price = etherPerTie;
         PriceSet(price);
     }
