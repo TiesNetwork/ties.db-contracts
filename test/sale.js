@@ -25,6 +25,12 @@ contract('TokenSale', async function (accounts) {
         await tokenContract.setMinter(saleContract.address, {from: accounts[2]});
     });
 
+    it("should not set bad price", async function () {
+    	await testRpc.assertThrow('bad price should have thrown', async () => {
+        	await saleContract.setPrice(web3.toWei(0.003, 'ether'), {from: accounts[3]});
+        });
+    });
+
     it("should set price", async function () {
         await saleContract.setPrice(web3.toWei(0.0025, 'ether'), {from: accounts[3]});
         let price = await saleContract.price();
@@ -140,6 +146,13 @@ contract('TokenSale', async function (accounts) {
 
         let total = await tokenContract.totalSupply();
         assert.equal(total.toNumber(), 200*1000*1000*zeroes, 'All the tokens should have been minted to cap')
+    });
+
+    it("should not mint after reaching cap", async function() {
+        await tokenContract.setMinter(accounts[2], {from: accounts[2]});
+        await testRpc.assertThrow('mint should have thrown', async () => {
+            await tokenContract.mint(accounts[2], 1);
+        });
     });
 
     it("should transfer be enabled by owner", async function() {
