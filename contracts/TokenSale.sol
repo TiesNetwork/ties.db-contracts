@@ -144,7 +144,7 @@ contract TokenSale is Ownable {
     }
 
     function setRobot(address _robot) onlyAuthority {
-        authority = _robot;
+        robot = _robot;
     }
 
     function setPrice(uint etherPerTie) onlyAuthority {
