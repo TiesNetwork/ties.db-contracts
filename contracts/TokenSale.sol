@@ -1,4 +1,10 @@
-pragma solidity ^0.4.11;
+/** 
+	Ties.Network TokenSale contract
+	@author Dmitry Kochin <k@ties.network>
+*/
+
+
+pragma solidity ^0.4.14;
 
 
 import "./include/MintableToken.sol";
@@ -154,7 +160,7 @@ contract TokenSale is Ownable {
         PriceSet(price);
     }
 
-    // SALE state management: start / pause / finish
+    // SALE state management: start / pause / finalize
     // --------------------------------------------
     function open(bool open) onlyAuthority {
         isOpen = open;
@@ -164,7 +170,7 @@ contract TokenSale is Ownable {
     function finalize() onlyAuthority {
         uint diff = CAP.sub(token.totalSupply());
         if(diff > 0) //The unsold capacity moves to team
-        token.mint(owner, diff);
+            token.mint(owner, diff);
         selfdestruct(owner);
         FinishSale();
     }

@@ -1,16 +1,22 @@
-pragma solidity ^0.4.11;
+/*
+ * Tie Token smart contract
+ *
+ * Supports ERC20, ERC223 stadards
+ *
+ * The TieToken is mintable during Token Sale. On Token Sale finalization it
+ * will be minted up to the cap and minting will be finished forever
+ *
+ * @author Dmitry Kochin <k@ties.network>
+ */
+
+
+pragma solidity ^0.4.14;
 
 
 import "./include/MintableToken.sol";
 import "./include/ERC23PayableToken.sol";
 
 
-/*
- * Tie Token
- *
- * The TieToken is mintable during ICO. On ICO finalization it
- * will be minted up to the cap and minting will be finished forever
- */
 contract TieToken is MintableToken, ERC23PayableToken {
     string public constant name = "TieToken";
     string public constant symbol = "TIE";
