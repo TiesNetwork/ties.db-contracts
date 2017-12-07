@@ -1,6 +1,6 @@
 // timer for tests specific to testrpc
 function assertJump(error) {
-  	assert.isOk(/invalid (JUMP|opcode)/.test(error.message), 'Invalid JUMP error must be returned');
+  	assert.isOk(/revert/.test(error.message), 'Transaction should revert');
 }
 
 module.exports = {
