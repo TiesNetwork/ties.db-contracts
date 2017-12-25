@@ -5,5 +5,5 @@ pragma solidity ^0.4.11;
 */
 
 contract ERC23PayableReceiver {
-    function tokenFallback(address _from, uint _value, bytes _data) payable;
+    function tokenFallback(address _from, uint _value, bytes _data) public payable;
 }

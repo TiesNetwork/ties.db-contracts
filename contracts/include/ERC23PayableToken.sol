@@ -1,28 +1,29 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.18;
 
 
-import 'zeppelin/contracts/token/BasicToken.sol';
-import './ERC23.sol';
-import './ERC23PayableReceiver.sol';
+import "zeppelin/contracts/token/BasicToken.sol";
+import "./ERC23.sol";
+import "./ERC23PayableReceiver.sol";
+
 
 /**  https://github.com/Dexaran/ERC23-tokens/blob/master/token/ERC223/ERC223BasicToken.sol
  *
  */
-contract ERC23PayableToken is BasicToken, ERC23{
+contract ERC23PayableToken is BasicToken, ERC23 {
     // Function that is called when a user or another contract wants to transfer funds .
-    function transfer(address to, uint value, bytes data){
+    function transfer(address to, uint value, bytes data) public {
         transferAndPay(to, value, data);
     }
 
     // Standard function transfer similar to ERC20 transfer with no _data .
     // Added due to backwards compatibility reasons .
-    function transfer(address to, uint value) returns (bool){
+    function transfer(address to, uint value) public returns (bool) {
         bytes memory empty;
         transfer(to, value, empty);
         return true;
     }
 
-    function transferAndPay(address to, uint value, bytes data) payable {
+    function transferAndPay(address to, uint value, bytes data) public payable {
         // Standard function transfer similar to ERC20 transfer with no _data .
         // Added due to backwards compatibility reasons .
         uint codeLength;
@@ -35,15 +36,15 @@ contract ERC23PayableToken is BasicToken, ERC23{
         balances[msg.sender] = balances[msg.sender].sub(value);
         balances[to] = balances[to].add(value);
 
-        if(codeLength>0) {
+        if (codeLength > 0) {
             ERC23PayableReceiver receiver = ERC23PayableReceiver(to);
             receiver.tokenFallback.value(msg.value)(msg.sender, value, data);
-        }else if(msg.value > 0){
+        }else if (msg.value > 0) {
             to.transfer(msg.value);
         }
 
         Transfer(msg.sender, to, value);
-        if(data.length > 0)
+        if (data.length > 0)
             TransferData(msg.sender, to, value, data);
     }
 }

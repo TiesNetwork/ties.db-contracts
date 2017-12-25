@@ -10,7 +10,7 @@
  */
 
 
-pragma solidity ^0.4.14;
+pragma solidity ^0.4.18;
 
 
 import "./include/MintableToken.sol";
@@ -27,25 +27,30 @@ contract TieToken is MintableToken, ERC23PayableToken {
     //The cap is 200 mln TIEs
     uint private constant CAP = 200*(10**6)*(10**decimals);
 
-    function mint(address _to, uint _amount){
-        require(totalSupply.add(_amount) <= CAP);
-        super.mint(_to, _amount);
-    }
-
     function TieToken(address multisigOwner) {
         //Transfer ownership on the token to multisig on creation
         transferOwnership(multisigOwner);
     }
 
+    function mint(address _to, uint _amount) {
+        require(totalSupply.add(_amount) <= CAP);
+        super.mint(_to, _amount);
+    }
+
     /**
     * Overriding all transfers to check if transfers are enabled
     */
-    function transferAndPay(address to, uint value, bytes data) payable{
+    function transferAndPay(address to, uint value, bytes data) payable {
         require(transferEnabled);
         super.transferAndPay(to, value, data);
     }
 
-    function enableTransfer(bool enabled) onlyOwner{
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+        require(transferEnabled);
+        return super.transferFrom(_from, _to, _value);
+    }
+
+    function enableTransfer(bool enabled) public onlyOwner {
         transferEnabled = enabled;
     }
 

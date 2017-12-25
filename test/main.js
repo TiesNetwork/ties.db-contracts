@@ -1,168 +1,247 @@
-let TieToken = artifacts.require("./TieToken.sol");
-let Registry = artifacts.require("./Registry.sol");
-let Invitation = artifacts.require("./Invitation.sol");
-var EU = require("ethereumjs-util");
-
-const decimals = 18;
-const zeroes = Math.pow(10, decimals);
-const zeroesBN = (new EU.BN(10)).pow(new EU.BN(decimals));
+let TiesDB = artifacts.require("../contracts/structure/TiesDB.sol");
+let NoRestrictions = artifacts.require("./helpers/NoRestrictions.sol");
+const testRpc = require('./helpers/testRpc');
 
 let secrets = [
-    "0x83c14ddb845e629975e138a5c28ad5a72a49252ea65b3d3ec99810c82751cc3a", //accounts[0]
-    "0x52f3a1fa15405e1d5a68d7774ca45c7a3c7373a66c3c44db94a7f99a22c14d28", //accounts[1]
-    "0xdc6a7f0cd30f86da5e55ca7b62ac1a86f5d8b76a796176152803e0fcbc253900", //accounts[2]
-    "0xd3b6b98613ce7bd4636c5c98cc17afb0403d690f9c2b646726e08334583de101", //accounts[3]
+    "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3", //accounts[0]
+    "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f", //accounts[1]
+    "0x0dbbe8e4ae425a6d2687f1a7e3ba17bc98c673636790f1b8ad91193c05875ef1", //accounts[2]
+    "0xc88b703fb08cbea894b6aeff5a544fb92e78a18e19814cd85da83b71f772aa6c", //accounts[3]
 ];
 
-contract('Registry', async function (accounts) {
-    let tokenContract;
-    let registry;
+function getHash(name){
+    let hash = web3.sha3(name);
+    let bn = web3.toAscii(hash);
+//    console.log("Hash of " + name + ": " + hash + "; " + bn.toString(16));
+    return bn;
+}
 
-    //Cheque should be web3 BigNumber
-    const cheque1 = web3.toBigNumber(8).mul(zeroesBN.toString());
+contract('TiesDB (Tablespaces)', async function (accounts) {
+    debugger;
+
+    let tiesDB, noRestrictions;
 
     before(async function(){
-        tokenContract = await TieToken.new(accounts[3]);
-        await tokenContract.setMinter(accounts[0], {from: accounts[3]});
-        await tokenContract.enableTransfer(true, {from: accounts[3]});
-
-        await tokenContract.mint(accounts[0], 1000*zeroes);
-        await tokenContract.mint(accounts[1], 2000*zeroes);
-
-        registry = await Registry.new(tokenContract.address);
-
-        await tokenContract.approve(registry.address, 1000*zeroes, {from: accounts[0]});
-        await tokenContract.approve(registry.address, 2000*zeroes, {from: accounts[1]});
+        tiesDB = await TiesDB.deployed();
+        noRestrictions = await NoRestrictions.new();
     });
 
-    it("should add deposits", async function () {
-        await tokenContract.transfer(registry.address, 100*zeroes);
-        let dep = await registry.getDeposit(accounts[0]);
-
-        assert.equal(dep.toNumber(), 100*zeroes, "100 wasn't in the first account (ERC23)");
-
-        await registry.addDeposit(200*zeroes, {from: accounts[1]});
-        dep = await registry.getDeposit(accounts[1]);
-
-        assert.equal(dep.toNumber(), 200*zeroes, "200 wasn't in the second account (ERC20)");
+    it("should not find inexistent tablespace", async function () {
+        let exists = await tiesDB.hasTablespace(getHash("tblspc"));
+        assert.ok(!exists, "Table space should not exist yet");
     });
 
-    it("should pay with cheque", async function() {
-        let issuer = EU.setLength(EU.toBuffer(accounts[0]), 20);
-        let beneficiary = EU.setLength(EU.toBuffer(accounts[2]), 20);
-        let amount = EU.setLength(EU.toBuffer(new EU.BN(cheque1.toString())), 32);
-        let sha3hash = EU.sha3(Buffer.concat([EU.toBuffer("TIE cheque"), issuer, beneficiary, amount]));
-        let sig = EU.ecsign(sha3hash, EU.toBuffer(secrets[0]));
+    it("should create tablespace", async function () {
+        await tiesDB.createTablespace("tblspc", noRestrictions.address);
 
-        let tx = await registry.cashCheque(accounts[0], accounts[2], cheque1, EU.bufferToHex(sig.v), EU.bufferToHex(sig.r), EU.bufferToHex(sig.s));
-
-        let events = tx.logs;
-        let ok = events.find(e => e.event == 'ChequeRedeemed');
-
-        assert.isOk(ok, 'paying with check should have been successful!');
+        let exists = await tiesDB.hasTablespace(getHash("tblspc"));
+        assert.ok(exists, "Table space should exist now");
     });
 
-    it("should payment be done", async function() {
-        let deposit = await registry.getDeposit(accounts[0]);
+    it("should create other tablespaces", async function () {
+        await tiesDB.createTablespace("tblspc2", noRestrictions.address);
 
-        assert.equal(deposit.toString(), (100 - 8)*zeroes, "Deposit should have decreased");
+        let exists = await tiesDB.hasTablespace(getHash("tblspc2"));
+        assert.ok(exists, "Table space 2 should exist now");
 
-        let sent = await registry.getSent(accounts[0], accounts[2]);
+        await tiesDB.createTablespace("tblspc3", noRestrictions.address);
 
-        assert.equal(sent.toString(), cheque1.toString(), "Amount should have been sent");
-
-        let balance = await tokenContract.balanceOf(accounts[2]);
-
-        assert.equal(balance.toString(), cheque1.toString(), "Amount should have been received");
-
+        exists = await tiesDB.hasTablespace(getHash("tblspc3"));
+        assert.ok(exists, "Table space 3 should exist now");
     });
 
+    it("should delete tablespace", async function () {
+        let hash = getHash("tblspc2");
+        await tiesDB.deleteTablespace(hash);
+
+        let exists = await tiesDB.hasTablespace(hash);
+        assert.ok(!exists, "Table space 2 should not exist now");
+
+        exists = await tiesDB.hasTablespace(getHash("tblspc3"));
+        assert.ok(exists, "Table space 3 should still exist");
+    });
+
+    it("should delete last tablespace", async function () {
+        let hash = getHash("tblspc3");
+        await tiesDB.deleteTablespace(hash);
+
+        let exists = await tiesDB.hasTablespace(hash);
+        assert.ok(!exists, "Table space 3 should not exist now");
+
+        exists = await tiesDB.hasTablespace(getHash("tblspc"));
+        assert.ok(exists, "First table space should still exist");
+    });
 });
 
-contract('Invitation', async function (accounts) {
-    let tokenContract;
-    let invitation;
+
+contract('TiesDB (Tables)', async function (accounts) {
+    let tiesDB, noRestrictions, hashTblspc;
 
     before(async function(){
-        tokenContract = await TieToken.new(accounts[3]);
-        await tokenContract.setMinter(accounts[0], {from: accounts[3]});
-        await tokenContract.enableTransfer(true, {from: accounts[3]});
-
-        await tokenContract.mint(accounts[0], 1000*zeroes);
-        await tokenContract.mint(accounts[1], 2000*zeroes);
-
-        invitation = await Invitation.new(tokenContract.address);
+        tiesDB = await TiesDB.deployed();
+        noRestrictions = await NoRestrictions.new();
+        await tiesDB.createTablespace("tblspc", noRestrictions.address);
+        hashTblspc = getHash("tblspc");
     });
 
-    it("should issue invitation", async function () {
-        await tokenContract.transferAndPay(invitation.address, 10*zeroes, null, {value: web3.toWei(0.1, 'ether')});
-
-        let index = await invitation.getLastInvite(accounts[0]);
-
-        assert.equal(index.toNumber(), 1, "The invite should have been issued!");
-
-        let ok = await invitation.isInvitationAvailable(accounts[0], 1);
-
-        assert.ok(ok, "The issued invitation should be available");
-
-        let balance = web3.eth.getBalance(invitation.address);
-
-        assert.equal(balance.toString(), web3.toWei(0.1, 'ether').toString(), "The ether should have been transferred to invitation contract");
-
+    it("should not find inexistent table", async function () {
+        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl"));
+        assert.ok(!exists, "Table should not exist yet");
     });
 
-    it("should redeem invitation", async function() {
-        let index = EU.setLength(EU.toBuffer(new EU.BN(1)), 32);
-        let sha3hash = EU.sha3(Buffer.concat([EU.toBuffer("TIE invitation"), index]));
-        let sig = EU.ecsign(sha3hash, EU.toBuffer(secrets[0]));
+    it("should create table", async function () {
+        await tiesDB.createTable(hashTblspc, "tbl");
 
-        let oldBalance = web3.eth.getBalance(accounts[2]);
-
-        let tx = await invitation.redeem(accounts[2], accounts[0], 1, EU.bufferToHex(sig.v), EU.bufferToHex(sig.r), EU.bufferToHex(sig.s));
-
-        let events = tx.logs;
-        let ok = events.find(e => e.event == 'Invited');
-        assert.isOk(ok, 'invite redeem should have been successful!');
-
-        let tokens = await tokenContract.balanceOf(accounts[2]);
-        assert.equal(tokens.toNumber(), 10*zeroes, 'Tokens should have come from inviter');
-
-        let newBalance = web3.eth.getBalance(accounts[2]);
-        assert.equal(oldBalance.toNumber(), newBalance.sub(web3.toWei(0.1, 'ether')).toNumber(), 'Ether should have come from inviter');
-
+        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl"));
+        assert.ok(exists, "Table should exist now");
     });
 
-    it("should invitation have gone", async function() {
-        let ok = await invitation.isInvitationAvailable(accounts[0], 1);
+    it("should create other tables", async function () {
+        await tiesDB.createTable(hashTblspc, "tbl2");
 
-        assert.ok(!ok, "The issued invitation should have gone");
+        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl2"));
+        assert.ok(exists, "Table 2 should exist now");
+
+        await tiesDB.createTable(hashTblspc, "tbl3");
+
+        exists = await tiesDB.hasTable(hashTblspc, getHash("tbl3"));
+        assert.ok(exists, "Table 3 should exist now");
     });
 
-    it("should withdraw invitation", async function () {
-        let oldBalance = web3.eth.getBalance(accounts[0]);
-        let oldTokens = await tokenContract.balanceOf(accounts[2]);
-        let gp = web3.eth.gasPrice;
+    it("should delete table", async function () {
+        await tiesDB.deleteTable(hashTblspc, getHash("tbl2"));
 
-        let tx0 = await tokenContract.transferAndPay(invitation.address, 15*zeroes, null, {value: web3.toWei(0.2, 'ether')});
-        let index = await invitation.getLastInvite(accounts[0]);
+        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl2"));
+        assert.ok(!exists, "Table 2 should not exist now");
 
-        assert.equal(index.toNumber(), 2, "The second invite should have been issued!");
+        exists = await tiesDB.hasTable(hashTblspc, getHash("tbl3"));
+        assert.ok(exists, "Table 3 should still exist");
+    });
 
-        let indexbuf = EU.setLength(EU.toBuffer(new EU.BN(2)), 32);
-        let sha3hash = EU.sha3(Buffer.concat([EU.toBuffer("TIE invitation"), indexbuf]));
-        let sig = EU.ecsign(sha3hash, EU.toBuffer(secrets[0]));
+    it("should delete last table", async function () {
+        let hash = getHash("tbl3");
+        await tiesDB.deleteTable(hashTblspc, hash);
 
-        let tx = await invitation.redeem(accounts[0], accounts[0], index, EU.bufferToHex(sig.v), EU.bufferToHex(sig.r), EU.bufferToHex(sig.s));
+        let exists = await tiesDB.hasTable(hashTblspc, hash);
+        assert.ok(!exists, "Table 3 should not exist now");
 
-        let events = tx.logs;
-        let ok = events.find(e => e.event == 'InviteDeleted');
-        assert.isOk(ok, 'invite withdraw should have been successful!');
+        exists = await tiesDB.hasTable(hashTblspc, getHash("tbl"));
+        assert.ok(exists, "First table should still exist");
+    });
+});
 
-        let newBalance = web3.eth.getBalance(accounts[0]);
-        //Balance will diminish by gas used
-        assert.ok(oldBalance.sub(newBalance).lt(web3.toWei(0.02, 'ether')), 'Ether should have returned to inviter');
+contract('TiesDB (Fields)', async function (accounts) {
+    let tiesDB, noRestrictions, hashTblspc, hashTbl;
 
-        let newTokens = await tokenContract.balanceOf(accounts[2]);
-        assert.equal(oldTokens.toNumber(), newTokens.toNumber(), 'Tokens should have returned to inviter');
+    before(async function(){
+        tiesDB = await TiesDB.deployed();
+        noRestrictions = await NoRestrictions.new();
+        await tiesDB.createTablespace("tblspc", noRestrictions.address);
+        hashTblspc = getHash("tblspc");
+        await tiesDB.createTable(hashTblspc, "tbl");
+        hashTbl = getHash("tbl");
+    });
+
+    it("should not find inexistent field", async function () {
+        let exists = await tiesDB.hasField(hashTblspc, hashTbl, getHash("fld"));
+        assert.ok(!exists, "Field should not exist yet");
+    });
+
+    it("should create field", async function () {
+        await tiesDB.createField(hashTblspc, hashTbl, "fld", "type", "0x");
+
+        let exists = await tiesDB.hasField(hashTblspc, hashTbl, getHash("fld"));
+        assert.ok(exists, "Field should exist now");
+    });
+
+    it("should create other fields", async function () {
+        await tiesDB.createField(hashTblspc, hashTbl, "fld2", "type", "0x");
+
+        let exists = await tiesDB.hasField(hashTblspc, hashTbl, getHash("fld2"));
+        assert.ok(exists, "Field 2 should exist now");
+
+        await tiesDB.createField(hashTblspc, hashTbl, "fld3", "type", "0x");
+
+        exists = await tiesDB.hasField(hashTblspc, hashTbl, getHash("fld3"));
+        assert.ok(exists, "Field 3 should exist now");
+    });
+
+    it("should delete field", async function () {
+        await tiesDB.deleteField(hashTblspc, hashTbl, getHash("fld2"));
+
+        let exists = await tiesDB.hasField(hashTblspc, hashTbl, getHash("fld2"));
+        assert.ok(!exists, "Field 2 should not exist now");
+
+        exists = await tiesDB.hasField(hashTblspc, hashTbl, getHash("fld3"));
+        assert.ok(exists, "Field 3 should still exist");
+    });
+
+    it("should delete last field", async function () {
+        let hash = getHash("fld3");
+        await tiesDB.deleteField(hashTblspc, hashTbl, hash);
+
+        let exists = await tiesDB.hasField(hashTblspc, hashTbl, hash);
+        assert.ok(!exists, "Field 3 should not exist now");
+
+        exists = await tiesDB.hasField(hashTblspc, hashTbl, getHash("fld"));
+        assert.ok(exists, "First field should still exist");
+    });
+});
+
+contract('TiesDB (Triggers)', async function (accounts) {
+    let tiesDB, noRestrictions, hashTblspc, hashTbl;
+
+    before(async function(){
+        tiesDB = await TiesDB.deployed();
+        noRestrictions = await NoRestrictions.new();
+        await tiesDB.createTablespace("tblspc", noRestrictions.address);
+        hashTblspc = getHash("tblspc");
+        await tiesDB.createTable(hashTblspc, "tbl");
+        hashTbl = getHash("tbl");
+    });
+
+    it("should not find inexistent trigger", async function () {
+        let exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, getHash("trg"));
+        assert.ok(!exists, "Trigger should not exist yet");
+    });
+
+    it("should create trigger", async function () {
+        await tiesDB.createTrigger(hashTblspc, hashTbl, "trg", "0x");
+
+        let exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, getHash("trg"));
+        assert.ok(exists, "Trigger should exist now");
+    });
+
+    it("should create other triggers", async function () {
+        await tiesDB.createTrigger(hashTblspc, hashTbl, "trg2", "0x");
+
+        let exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, getHash("trg2"));
+        assert.ok(exists, "Trigger 2 should exist now");
+
+        await tiesDB.createTrigger(hashTblspc, hashTbl, "trg3", "0x");
+
+        exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, getHash("trg3"));
+        assert.ok(exists, "Trigger 3 should exist now");
+    });
+
+    it("should delete trigger", async function () {
+        await tiesDB.deleteTrigger(hashTblspc, hashTbl, getHash("trg2"));
+
+        let exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, getHash("trg2"));
+        assert.ok(!exists, "Trigger 2 should not exist now");
+
+        exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, getHash("trg3"));
+        assert.ok(exists, "Trigger 3 should still exist");
+    });
+
+    it("should delete last trigger", async function () {
+        let hash = getHash("trg3");
+        await tiesDB.deleteTrigger(hashTblspc, hashTbl, hash);
+
+        let exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, hash);
+        assert.ok(!exists, "Trigger 3 should not exist now");
+
+        exists = await tiesDB.hasTrigger(hashTblspc, hashTbl, getHash("trg"));
+        assert.ok(exists, "First trigger should still exist");
     });
 });

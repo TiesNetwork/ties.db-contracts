@@ -1,17 +1,18 @@
 {
-  "name": "db-contracts",
-  "version": "1.0.0",
-  "description": "TiesDB UserRegistry contract",
-  "main": "-",
+  "name": "ties.db-contracts",
+  "version": "0.0.1",
+  "description": "Ties.DB contracts",
+  "main": "index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "truffle test"
   },
   "author": "Dmitry Kochin <k@ties.network>",
   "license": "ISC",
   "devDependencies": {
-    "ethereumjs-util": "^5.1.2"
+    "ethereumjs-util": "^5.1.2",
+    "web3-eth-abi": "^1.0.0-beta.27"
   }
 }
