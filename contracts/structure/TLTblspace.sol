@@ -10,32 +10,37 @@ library TLTblspace {
 
     function createTable(TLType.Tablespace storage ts, string tName) public returns (bytes32) {
         require(!tName.isEmpty());
-        var tKey = tName.hash();
+        var tKey = keccak256(ts.name, "#", tName);
         require(!hasTable(ts, tKey) && ts.rs.canCreateTable(ts.name, tName, msg.sender));
         ts.tm[tKey] = TLType.Table({
-            name: tName, ts: ts, tmi: ts.tmis.length,
-            fmis: new bytes32[](0), trmis: new bytes32[](0)
+            name: tName, ts: ts, idx: ts.tmis.length,
+            fmis: new bytes32[](0), trmis: new bytes32[](0),
+            nodes: new address[](0)
         });
         ts.tmis.push(tKey);
         return tKey;
     }
 
-    function deleteTable(TLType.Tablespace storage ts, bytes32 tKey) public {
-        var t = ts.tm[tKey];
-        require(!t.name.isEmpty() && ts.rs.canDeleteTable(ts.name, t.name, msg.sender));
-        assert(ts.tmis.length > 0); //If we are here then there must be table in array
+    function deleteTable(TLType.Tablespace storage cont, bytes32 key) public {
+        var map = cont.tm;
+        var arr = cont.tmis;
 
-        var idx = t.tmi;
-        if (ts.tmis.length > 1 && idx != ts.tmis.length-1) {
-            ts.tmis[idx] = ts.tmis[ts.tmis.length-1];
-            ts.tm[ts.tmis[idx]].tmi = idx;
+        var item = map[key];
+        require(!item.name.isEmpty() && cont.rs.canDeleteTable(cont.name, item.name, msg.sender));
+
+        assert(arr.length > 0); //If we are here then there must be table in array
+        var idx = item.idx;
+        if (arr.length > 1 && idx != arr.length-1) {
+            arr[idx] = arr[arr.length-1];
+            map[arr[idx]].idx = idx;
         }
 
-        delete ts.tmis[ts.tmis.length-1];
-        ts.tmis.length--;
+        delete arr[arr.length-1];
+        arr.length--;
 
-        delete ts.tm[tKey];
+        delete map[key];
     }
+
 
     function hasTable(TLType.Tablespace storage ts, bytes32 tKey) public constant returns (bool) {
         return !ts.tm[tKey].name.isEmpty();
