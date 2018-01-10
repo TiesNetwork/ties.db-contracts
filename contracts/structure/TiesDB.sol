@@ -9,7 +9,7 @@ import "./TLTrigger.sol";
 import "./TLNode.sol";
 
 
-contract TiesDB is Ownable {
+contract TiesDB is Ownable, TiesDBNodes {
     
     using TLField for TLType.Field;
     using TLTrigger for TLType.Trigger;
@@ -66,7 +66,7 @@ contract TiesDB is Ownable {
     function hasTablespace(bytes32 tsKey) public constant returns (bool) {
         return s.hasTablespace(tsKey);
     }
-    
+
     function getTablespaceName(bytes32 tsKey) public constant returns (string) {
         return s.tsm[tsKey].getTablespaceName();
     }

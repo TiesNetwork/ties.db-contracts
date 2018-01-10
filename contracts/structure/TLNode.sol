@@ -45,7 +45,7 @@ library TLNode {
         rs.ranges.push(TLType.Range({ divider: divider, remainder: remainder }));
     }
 
-    function findRange(TLType.Node storage n, bytes32 tKey, uint32 divider, uint32 remainder) public returns (uint){
+    function findRange(TLType.Node storage n, bytes32 tKey, uint32 divider, uint32 remainder) public view returns (uint){
         var rs = n.trm[tKey];
         require(rs.idx > 0);
         return rs.findRange(divider, remainder);
@@ -93,7 +93,7 @@ library TLNode {
         return rs;
     }
 
-    function isEmpty(TLType.Node storage n) internal returns (bool) {
+    function isEmpty(TLType.Node storage n) internal view returns (bool) {
         return n.idx == 0;
     }
 

@@ -45,10 +45,13 @@ library TLStorage {
     * Nodes should manually enter ranges distribution queue
     */
     function createNode(TLType.Storage storage s, address node) public {
-        require(!s.nm[node].isEmpty()); //There is still no active node with this address
-
-        s.nm[node] = TLType.Node({idx: uint128(s.nmis.length), queue_idx: 0, tmis: new bytes32[](0)});
-        s.nmis.push(node);
+        var n = s.nm[node];
+        if(n.isEmpty()){
+            //Creating new node only if it was not created before
+//            s.tsmis.push(keccak256('sdfas'));
+            s.nmis.push(node);
+            n.idx = uint128(s.nmis.length);
+        }
     }
 
     /**
@@ -143,7 +146,7 @@ library TLStorage {
         }
     }
 
-    function getTablespaceKeys(TLType.Storage storage s) internal constant returns (bytes32[]) {
+    function getTablespaceKeys(TLType.Storage storage s) internal view returns (bytes32[]) {
         return s.tsmis;
     }
 

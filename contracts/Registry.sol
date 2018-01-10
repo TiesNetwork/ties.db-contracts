@@ -4,6 +4,7 @@ pragma solidity ^0.4.18;
 import "zeppelin/contracts/token/ERC20.sol";
 import "zeppelin/contracts/math/SafeMath.sol";
 import "./include/ERC23PayableReceiver.sol";
+import "./structure/TiesDBAPI.sol";
 
 // This contract manages all user deposits for TiesDB
 
@@ -34,9 +35,11 @@ contract Registry is ERC23PayableReceiver {
     mapping (address => User) public users;
     mapping (address => Node) public nodes;
     ERC20 public token;
+    TiesDBNodes public tiesDB;
 
-    function Registry(address _token) public {
+    function Registry(address _token, address _tiesDB) public {
         token = ERC20(_token);
+        tiesDB = TiesDBNodes(_tiesDB);
     }
 
     function addUserDeposit(uint amount) public {
@@ -47,7 +50,7 @@ contract Registry is ERC23PayableReceiver {
 
     function addNodeDeposit(uint amount) public {
         //If there is no allowance or not enough tokens it will throw
-        nodes[msg.sender].deposit = nodes[msg.sender].deposit.add(amount);
+        addNodeDeposit(msg.sender, amount);
         assert(token.transferFrom(msg.sender, address(this), amount));
     }
 
@@ -92,10 +95,10 @@ contract Registry is ERC23PayableReceiver {
     function cashCheque(address issuer, address beneficiary, uint amount, uint64 lastTimeStamp,
         uint8 sigv, bytes32 sigr, bytes32 sigs) public returns (uint) {
 
-        Node node = nodes[beneficiary];
+        Node storage node = nodes[beneficiary];
         require(node.deposit > 0);
 
-        User u = users[issuer];
+        User storage u = users[issuer];
         Redeem storage r = u.sent[beneficiary];
 
         // Check if the cheque is old.
@@ -138,11 +141,18 @@ contract Registry is ERC23PayableReceiver {
     }
 
     function addUserDeposit(address from, uint amount) internal {
+        require(amount > 0);
         users[from].deposit = users[from].deposit.add(amount);
     }
 
     function addNodeDeposit(address from, uint amount) internal {
+        require(amount > 0);
         nodes[from].deposit = nodes[from].deposit.add(amount);
+        tiesDB.createNode(from);
+    }
+
+    function createNode(address from) public {
+        tiesDB.createNode(from);
     }
 
 }

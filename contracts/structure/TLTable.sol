@@ -45,7 +45,7 @@ library TLTable {
         return trKey;
     }
 
-    function hasField(TLType.Table storage t, bytes32 fKey) public constant returns (bool) {
+    function hasField(TLType.Table storage t, bytes32 fKey) public view returns (bool) {
         return !t.fm[fKey].name.isEmpty();
     }
 
@@ -69,21 +69,21 @@ library TLTable {
         delete map[key];
     }
 
-    function hasTrigger(TLType.Table storage t, bytes32 trKey) public constant returns (bool) {
+    function hasTrigger(TLType.Table storage t, bytes32 trKey) public view returns (bool) {
         return !t.trm[trKey].name.isEmpty();
     }
 
-    function getFieldsKeys(TLType.Table storage t) internal constant returns (bytes32[]) {
+    function getFieldsKeys(TLType.Table storage t) internal view returns (bytes32[]) {
         require(!t.name.isEmpty());
         return t.fmis;
     }
 
-    function getTableName(TLType.Table storage t) internal constant returns (string) {
+    function getTableName(TLType.Table storage t) internal view returns (string) {
         require(!t.name.isEmpty());
         return t.name;
     }
 
-    function getTriggersKeys(TLType.Table storage t) internal constant returns (bytes32[]) {
+    function getTriggersKeys(TLType.Table storage t) internal view returns (bytes32[]) {
         require(!t.name.isEmpty());
         return t.trmis;
     }

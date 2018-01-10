@@ -42,16 +42,16 @@ library TLTblspace {
     }
 
 
-    function hasTable(TLType.Tablespace storage ts, bytes32 tKey) public constant returns (bool) {
+    function hasTable(TLType.Tablespace storage ts, bytes32 tKey) public view returns (bool) {
         return !ts.tm[tKey].name.isEmpty();
     }
 
-    function getTablesKeys(TLType.Tablespace storage ts) internal constant returns (bytes32[]) {
+    function getTablesKeys(TLType.Tablespace storage ts) internal view returns (bytes32[]) {
         require(!ts.name.isEmpty());
         return ts.tmis;
     }
 
-    function getTablespaceName(TLType.Tablespace storage ts) internal constant returns (string) {
+    function getTablespaceName(TLType.Tablespace storage ts) internal view returns (string) {
         require(!ts.name.isEmpty());
         return ts.name;
     }

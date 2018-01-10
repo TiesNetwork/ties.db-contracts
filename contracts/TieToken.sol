@@ -27,12 +27,12 @@ contract TieToken is MintableToken, ERC23PayableToken {
     //The cap is 200 mln TIEs
     uint private constant CAP = 200*(10**6)*(10**decimals);
 
-    function TieToken(address multisigOwner) {
+    function TieToken(address multisigOwner) public {
         //Transfer ownership on the token to multisig on creation
         transferOwnership(multisigOwner);
     }
 
-    function mint(address _to, uint _amount) {
+    function mint(address _to, uint _amount) public {
         require(totalSupply.add(_amount) <= CAP);
         super.mint(_to, _amount);
     }
@@ -40,7 +40,7 @@ contract TieToken is MintableToken, ERC23PayableToken {
     /**
     * Overriding all transfers to check if transfers are enabled
     */
-    function transferAndPay(address to, uint value, bytes data) payable {
+    function transferAndPay(address to, uint value, bytes data) public payable {
         require(transferEnabled);
         super.transferAndPay(to, value, data);
     }

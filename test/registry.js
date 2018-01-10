@@ -1,8 +1,17 @@
 ﻿let TieToken = artifacts.require("./TieToken.sol");
 let Registry = artifacts.require("./Registry.sol");
+let TiesDB = artifacts.require("./TiesDB.sol");
+let NoRestrictions = artifacts.require("./helpers/NoRestrictions.sol");
+
 const testRpc = require('./helpers/testRpc');
 let EU = require("ethereumjs-util");
 
+function getHash(name){
+    let hash = web3.sha3(name);
+    let bn = web3.toAscii(hash);
+//    console.log("Hash of " + name + ": " + hash + "; " + bn.toString(16));
+    return bn;
+}
 
 let secrets = [
     "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3", //accounts[0]
@@ -18,6 +27,7 @@ const zeroesBN = web3.toBigNumber(10).pow(web3.toBigNumber(decimals));
 contract('Registry', async function (accounts) {
     let tokenContract;
     let registry;
+    let tiesDB;
 
     debugger;
 
@@ -33,11 +43,22 @@ contract('Registry', async function (accounts) {
         await tokenContract.mint(accounts[1], 2000*zeroes);
         await tokenContract.mint(accounts[2], 5000*zeroes);
 
-        registry = await Registry.new(tokenContract.address);
+        tiesDB = await TiesDB.deployed();
+        registry = await Registry.new(tokenContract.address, tiesDB.address);
 
         await tokenContract.approve(registry.address, 1000*zeroes, {from: accounts[0]});
         await tokenContract.approve(registry.address, 2000*zeroes, {from: accounts[1]});
         await tokenContract.approve(registry.address, 2000*zeroes, {from: accounts[2]});
+
+        await tiesDB.setRegistry(registry.address);
+    });
+
+    it("should create tablespace", async function () {
+        let noRestrictions = await NoRestrictions.new();
+        await tiesDB.createTablespace("tblspc", noRestrictions.address);
+
+        let exists = await tiesDB.hasTablespace(getHash("tblspc"));
+        assert.ok(exists, "Table space should exist now");
     });
 
     it("should users add deposits", async function () {
@@ -53,8 +74,9 @@ contract('Registry', async function (accounts) {
     });
 
     it("should node add deposits", async function () {
-        await callOverloadedTransfer(tokenContract, registry.address, 500*zeroes, "0x00000001", {from: accounts[2]});
-//        await tokenContract.transferAndPay(registry.address, 500*zeroes, "0x00000001", {from: accounts[2]});
+        //Почему-то оверлоад фейлится :(
+//        await callOverloadedTransfer(tokenContract, registry.address, 500*zeroes, "0x00000001", {from: accounts[2]});
+        await tokenContract.transferAndPay(registry.address, 500*zeroes, "0x00000001", {from: accounts[2]});
         let dep = await registry.getNodeDeposit(accounts[2]);
 
         assert.equal(dep.toNumber(), 500*zeroes, "500 wasn't in the node account (ERC23)");
@@ -100,32 +122,27 @@ contract('Registry', async function (accounts) {
 async function callOverloadedTransfer(contract, to, value, data, params){
 	const web3Abi = require('web3-eth-abi');
 	const overloadedTransferAbi = {
-    	"constant": false,
-    	"inputs": [
+        "constant": false,
+        "inputs": [
             {
-                "name": "_to",
+                "name": "to",
                 "type": "address"
             },
             {
-                "name": "_value",
+                "name": "value",
                 "type": "uint256"
             },
             {
-                "name": "_data",
+                "name": "data",
                 "type": "bytes"
             }
-    	],
-    	"name": "transfer",
-    	"outputs": [
-        	{
-           		"name": "",
-            	"type": "bool"
-        	}
-    	],
-    	"payable": false,
-    	"stateMutability": "nonpayable",
-    	"type": "function"
-	};
+        ],
+        "name": "transfer",
+        "outputs": [],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    };
 
     const transferMethodTransactionData = web3Abi.encodeFunctionCall(
         overloadedTransferAbi,

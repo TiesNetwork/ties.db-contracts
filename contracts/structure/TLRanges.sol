@@ -6,7 +6,7 @@ import "./TLType.sol";
 
 library TLRanges {
 
-    function findRange(TLType.Ranges storage rs, uint32 divider, uint32 remainder) public returns (uint){
+    function findRange(TLType.Ranges storage rs, uint32 divider, uint32 remainder) public view returns (uint){
         for(int i=int(rs.ranges.length)-1; i>=0; --i){
             var r = rs.ranges[uint(i)];
             if (r.divider == divider && r.remainder == remainder) {
@@ -33,7 +33,7 @@ library TLRanges {
         return idx > 0;
     }
 
-    function isEmpty(TLType.Ranges rs) internal returns (bool) {
+    function isEmpty(TLType.Ranges rs) internal pure returns (bool) {
         return rs.idx == 0;
     }
 
