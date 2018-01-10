@@ -16,6 +16,13 @@ function getHash(name){
     return bn;
 }
 
+function getTableHash(tblspc, tbl){
+    let hash = web3.sha3(tblspc + '#' + tbl);
+    let bn = web3.toAscii(hash);
+//    console.log("Hash of " + name + ": " + hash + "; " + bn.toString(16));
+    return bn;
+}
+
 contract('TiesDB (Tablespaces)', async function (accounts) {
     debugger;
 
@@ -85,47 +92,47 @@ contract('TiesDB (Tables)', async function (accounts) {
     });
 
     it("should not find inexistent table", async function () {
-        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl"));
+        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl"));
         assert.ok(!exists, "Table should not exist yet");
     });
 
     it("should create table", async function () {
         await tiesDB.createTable(hashTblspc, "tbl");
 
-        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl"));
+        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl"));
         assert.ok(exists, "Table should exist now");
     });
 
     it("should create other tables", async function () {
         await tiesDB.createTable(hashTblspc, "tbl2");
 
-        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl2"));
+        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl2"));
         assert.ok(exists, "Table 2 should exist now");
 
         await tiesDB.createTable(hashTblspc, "tbl3");
 
-        exists = await tiesDB.hasTable(hashTblspc, getHash("tbl3"));
+        exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl3"));
         assert.ok(exists, "Table 3 should exist now");
     });
 
     it("should delete table", async function () {
-        await tiesDB.deleteTable(hashTblspc, getHash("tbl2"));
+        await tiesDB.deleteTable(hashTblspc, getTableHash("tblspc", "tbl2"));
 
-        let exists = await tiesDB.hasTable(hashTblspc, getHash("tbl2"));
+        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl2"));
         assert.ok(!exists, "Table 2 should not exist now");
 
-        exists = await tiesDB.hasTable(hashTblspc, getHash("tbl3"));
+        exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl3"));
         assert.ok(exists, "Table 3 should still exist");
     });
 
     it("should delete last table", async function () {
-        let hash = getHash("tbl3");
+        let hash = getTableHash("tblspc", "tbl3");
         await tiesDB.deleteTable(hashTblspc, hash);
 
         let exists = await tiesDB.hasTable(hashTblspc, hash);
         assert.ok(!exists, "Table 3 should not exist now");
 
-        exists = await tiesDB.hasTable(hashTblspc, getHash("tbl"));
+        exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl"));
         assert.ok(exists, "First table should still exist");
     });
 });
@@ -139,7 +146,7 @@ contract('TiesDB (Fields)', async function (accounts) {
         await tiesDB.createTablespace("tblspc", noRestrictions.address);
         hashTblspc = getHash("tblspc");
         await tiesDB.createTable(hashTblspc, "tbl");
-        hashTbl = getHash("tbl");
+        hashTbl = getTableHash("tblspc", "tbl");
     });
 
     it("should not find inexistent field", async function () {
@@ -197,7 +204,7 @@ contract('TiesDB (Triggers)', async function (accounts) {
         await tiesDB.createTablespace("tblspc", noRestrictions.address);
         hashTblspc = getHash("tblspc");
         await tiesDB.createTable(hashTblspc, "tbl");
-        hashTbl = getHash("tbl");
+        hashTbl = getTableHash("tblspc", "tbl");
     });
 
     it("should not find inexistent trigger", async function () {
