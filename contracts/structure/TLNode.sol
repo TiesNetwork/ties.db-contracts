@@ -93,6 +93,16 @@ library TLNode {
         return rs;
     }
 
+    function getRangesPack(TLType.Node storage n, bytes32 tKey) internal view returns (uint64[]) {
+        var ranges = n.trm[tKey].ranges;
+        uint64[] memory pack = new uint64[](ranges.length);
+        for(uint i=0; i<pack.length; ++i){
+            var r = ranges[i];
+            pack[i] = (uint64(r.divider) << 32) | uint64(r.remainder);
+        }
+        return pack;
+    }
+
     function isEmpty(TLType.Node storage n) internal view returns (bool) {
         return n.idx == 0;
     }

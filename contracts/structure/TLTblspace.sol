@@ -12,12 +12,14 @@ library TLTblspace {
         require(!tName.isEmpty());
         var tKey = keccak256(ts.name, "#", tName);
         require(!hasTable(ts, tKey) && ts.rs.canCreateTable(ts.name, tName, msg.sender));
-        ts.tm[tKey] = TLType.Table({
-            name: tName, ts: ts, idx: ts.tmis.length,
-            fmis: new bytes32[](0), trmis: new bytes32[](0),
-            nodes: new address[](0)
-        });
+
+        var t = ts.tm[tKey];
+        t.name = tName;
+        t.ts = ts;
+        t.idx = ts.tmis.length;
+
         ts.tmis.push(tKey);
+
         return tKey;
     }
 

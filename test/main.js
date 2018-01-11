@@ -2,26 +2,16 @@ let TiesDB = artifacts.require("../contracts/structure/TiesDB.sol");
 let NoRestrictions = artifacts.require("./helpers/NoRestrictions.sol");
 const testRpc = require('./helpers/testRpc');
 
+const db = require('./helpers/db');
+const getHash = db.getHash;
+const getTableHash = db.getTableHash;
+
 let secrets = [
     "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3", //accounts[0]
     "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f", //accounts[1]
     "0x0dbbe8e4ae425a6d2687f1a7e3ba17bc98c673636790f1b8ad91193c05875ef1", //accounts[2]
     "0xc88b703fb08cbea894b6aeff5a544fb92e78a18e19814cd85da83b71f772aa6c", //accounts[3]
 ];
-
-function getHash(name){
-    let hash = web3.sha3(name);
-    let bn = web3.toAscii(hash);
-//    console.log("Hash of " + name + ": " + hash + "; " + bn.toString(16));
-    return bn;
-}
-
-function getTableHash(tblspc, tbl){
-    let hash = web3.sha3(tblspc + '#' + tbl);
-    let bn = web3.toAscii(hash);
-//    console.log("Hash of " + name + ": " + hash + "; " + bn.toString(16));
-    return bn;
-}
 
 contract('TiesDB (Tablespaces)', async function (accounts) {
     debugger;
@@ -113,6 +103,9 @@ contract('TiesDB (Tables)', async function (accounts) {
 
         exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl3"));
         assert.ok(exists, "Table 3 should exist now");
+
+        let tsKey = await tiesDB.tableToTablespace(getTableHash("tblspc", "tbl3"));
+        assert.equal(tsKey, web3.fromAscii(hashTblspc), "We should be able to recover tablespace id from table id");
     });
 
     it("should delete table", async function () {
@@ -123,6 +116,9 @@ contract('TiesDB (Tables)', async function (accounts) {
 
         exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl3"));
         assert.ok(exists, "Table 3 should still exist");
+
+        let tsKey = await tiesDB.tableToTablespace(getTableHash("tblspc", "tbl2"));
+        assert.ok(web3.toBigNumber(tsKey).eq(0), "Deleted table id should be removed from mapping");
     });
 
     it("should delete last table", async function () {

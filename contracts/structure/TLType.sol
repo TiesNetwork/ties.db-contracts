@@ -33,6 +33,9 @@ library TLType {
         bytes32[] trmis; //Trigger mapping indexes
         mapping(bytes32 => Trigger) trm; //Trigger mapping
 
+        uint32 replicas;
+        uint32 ranges;
+
         address[] nodes; //Nodes storing the table
     }
 

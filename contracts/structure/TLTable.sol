@@ -2,11 +2,15 @@ pragma solidity ^0.4.15;
 
 import "./Util.sol";
 import "./TLType.sol";
+import "./TLField.sol";
+import "./TLTrigger.sol";
 
 
 library TLTable {
 
     using TiesLibString for string;
+    using TLField for TLType.Field;
+    using TLTrigger for TLType.Trigger;
 
     function createField(TLType.Table storage t, string fName,
             string fType, bytes fDefault) public returns (bytes32) {
@@ -22,7 +26,7 @@ library TLTable {
         var arr = cont.fmis;
 
         var item = map[key];
-        require(!item.name.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
+        require(!item.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be table in array
         var idx = cont.idx;
@@ -46,7 +50,7 @@ library TLTable {
     }
 
     function hasField(TLType.Table storage t, bytes32 fKey) public view returns (bool) {
-        return !t.fm[fKey].name.isEmpty();
+        return !t.fm[fKey].isEmpty();
     }
 
     function deleteTrigger(TLType.Table storage cont, bytes32 key) public {
@@ -54,7 +58,7 @@ library TLTable {
         var arr = cont.trmis;
 
         var item = map[key];
-        require(!item.name.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
+        require(!item.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be table in array
         var idx = cont.idx;
@@ -70,22 +74,26 @@ library TLTable {
     }
 
     function hasTrigger(TLType.Table storage t, bytes32 trKey) public view returns (bool) {
-        return !t.trm[trKey].name.isEmpty();
+        return !t.trm[trKey].isEmpty();
     }
 
     function getFieldsKeys(TLType.Table storage t) internal view returns (bytes32[]) {
-        require(!t.name.isEmpty());
+        require(!isEmpty(t));
         return t.fmis;
     }
 
     function getTableName(TLType.Table storage t) internal view returns (string) {
-        require(!t.name.isEmpty());
+        require(!isEmpty(t));
         return t.name;
     }
 
     function getTriggersKeys(TLType.Table storage t) internal view returns (bytes32[]) {
-        require(!t.name.isEmpty());
+        require(!isEmpty(t));
         return t.trmis;
+    }
+
+    function isEmpty(TLType.Table storage t) internal view returns (bool) {
+        return t.name.isEmpty();
     }
 
 }

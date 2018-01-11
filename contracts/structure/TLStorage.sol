@@ -3,6 +3,7 @@ pragma solidity ^0.4.15;
 import "./Util.sol";
 import "./TLType.sol";
 import "./TLNode.sol";
+import "./TLTable.sol";
 
 
 library TLStorage {
@@ -10,6 +11,7 @@ library TLStorage {
     using TiesLibString for string;
     using TiesLibAddress for address;
     using TLNode for TLType.Node;
+    using TLTable for TLType.Table;
 
     function createTablespace(TLType.Storage storage s, string tsName, TiesDBRestrictions rs) public returns (bytes32) {
         require(!tsName.isEmpty());
@@ -100,6 +102,16 @@ library TLStorage {
 
     function distributeRanges(TLType.Storage storage s, bytes32 tKey, uint32 ranges, uint32 replicas) public {
         require(s.queue.length >= replicas); //Can not distribute ranges when number of nodes is less than number of replicas
+
+        var table = getTable(s, tKey);
+        require(!table.isEmpty());
+
+        require(table.ts.rs.canDistributeRanges(table.ts.name, table.name, msg.sender));
+
+        require(table.replicas == 0 && table.ranges == 0);
+        table.replicas = replicas;
+        table.ranges = ranges;
+
         for ( uint r=0; r < replicas; ++r ) {
             for ( uint32 d=0; d < ranges; ++d ) {
                 distributeRange(s, tKey, ranges, d);
@@ -144,6 +156,14 @@ library TLStorage {
         for ( int j=int(n.tmis.length) - 1; j>=0; --j){
             _redistributeTableRanges(s, n, n.tmis[uint(j)]);
         }
+    }
+
+    function getTable(TLType.Storage storage s, bytes32 tKey) internal view returns (TLType.Table storage) {
+        var tsKey = s.table_to_tablespace[tKey];
+        var ts = s.tsm[tsKey];
+        var table = ts.tm[tKey];
+        require(!table.isEmpty());
+        return table;
     }
 
     function getTablespaceKeys(TLType.Storage storage s) internal view returns (bytes32[]) {

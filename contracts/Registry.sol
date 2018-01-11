@@ -151,8 +151,15 @@ contract Registry is ERC23PayableReceiver {
         tiesDB.createNode(from);
     }
 
-    function createNode(address from) public {
-        tiesDB.createNode(from);
+    function acceptRanges(bool accept) public {
+        var from = msg.sender;
+        require(nodes[from].deposit > 0);
+
+        if(accept){
+            tiesDB.queueNode(from);
+        }else{
+            tiesDB.unqueueNode(from);
+        }
     }
 
 }

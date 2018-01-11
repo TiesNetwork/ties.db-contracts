@@ -6,12 +6,7 @@ let NoRestrictions = artifacts.require("./helpers/NoRestrictions.sol");
 const testRpc = require('./helpers/testRpc');
 let EU = require("ethereumjs-util");
 
-function getHash(name){
-    let hash = web3.sha3(name);
-    let bn = web3.toAscii(hash);
-//    console.log("Hash of " + name + ": " + hash + "; " + bn.toString(16));
-    return bn;
-}
+const Db = require('./helpers/db');
 
 let secrets = [
     "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3", //accounts[0]
@@ -39,9 +34,11 @@ contract('Registry', async function (accounts) {
         await tokenContract.setMinter(accounts[0], {from: accounts[3]});
         await tokenContract.enableTransfer(true, {from: accounts[3]});
 
-        await tokenContract.mint(accounts[0], 1000*zeroes);
-        await tokenContract.mint(accounts[1], 2000*zeroes);
-        await tokenContract.mint(accounts[2], 5000*zeroes);
+        await Promise.all([
+            tokenContract.mint(accounts[0], 1000*zeroes),
+            tokenContract.mint(accounts[1], 2000*zeroes),
+            tokenContract.mint(accounts[2], 5000*zeroes),
+        ]);
 
         tiesDB = await TiesDB.deployed();
         registry = await Registry.new(tokenContract.address, tiesDB.address);
@@ -51,14 +48,6 @@ contract('Registry', async function (accounts) {
         await tokenContract.approve(registry.address, 2000*zeroes, {from: accounts[2]});
 
         await tiesDB.setRegistry(registry.address);
-    });
-
-    it("should create tablespace", async function () {
-        let noRestrictions = await NoRestrictions.new();
-        await tiesDB.createTablespace("tblspc", noRestrictions.address);
-
-        let exists = await tiesDB.hasTablespace(getHash("tblspc"));
-        assert.ok(exists, "Table space should exist now");
     });
 
     it("should users add deposits", async function () {
@@ -115,6 +104,86 @@ contract('Registry', async function (accounts) {
         let balance = await tokenContract.balanceOf(accounts[2]);
 
         assert.equal(balance.toString(), (4300 + 8)*zeroes, "Amount should have been received");
+    });
+});
+
+contract('Registry - TiesDB', async function (accounts) {
+    let tokenContract;
+    let registry;
+    let tiesDB;
+    let noRestrictions;
+
+    debugger;
+
+    before(async function(){
+        tokenContract = await TieToken.new(accounts[3]);
+        await tokenContract.setMinter(accounts[0], {from: accounts[3]});
+        await tokenContract.enableTransfer(true, {from: accounts[3]});
+
+        await Promise.all([
+            tokenContract.mint(accounts[0], 1000*zeroes),
+            tokenContract.mint(accounts[1], 2000*zeroes),
+            tokenContract.mint(accounts[2], 5000*zeroes),
+            tokenContract.mint(accounts[3], 5000*zeroes),
+            tokenContract.mint(accounts[4], 5000*zeroes),
+            tokenContract.mint(accounts[5], 5000*zeroes),
+            tokenContract.mint(accounts[6], 5000*zeroes),
+        ]);
+
+        tiesDB = await TiesDB.deployed();
+        registry = await Registry.new(tokenContract.address, tiesDB.address);
+        await tiesDB.setRegistry(registry.address);
+
+        noRestrictions = await NoRestrictions.new()
+    });
+
+    it("should register nodes", async function () {
+        await Promise.all([
+            tokenContract.transferAndPay(registry.address, 500*zeroes, "0x00000001", {from: accounts[3]}),
+            tokenContract.transferAndPay(registry.address, 500*zeroes, "0x00000001", {from: accounts[4]}),
+            tokenContract.transferAndPay(registry.address, 500*zeroes, "0x00000001", {from: accounts[5]}),
+            tokenContract.transferAndPay(registry.address, 500*zeroes, "0x00000001", {from: accounts[6]}),
+        ]);
+
+        let nodes = await tiesDB.getNodes();
+        assert.equal(nodes.length, 4, "There should be 4 nodes by now");
+    });
+
+    it("should create table", async function () {
+        await tiesDB.createTablespace("tblspc", noRestrictions.address);
+        await tiesDB.createTable(Db.getHash("tblspc"), "tbl");
+
+        let exists = await tiesDB.hasTable(Db.getHash("tblspc"), Db.getTableHash("tblspc", "tbl"));
+        assert.ok(exists, "Table should exist now");
+    });
+
+    it("should distribute", async function () {
+        let tblHash = Db.getTableHash("tblspc", "tbl");
+
+        await testRpc.assertThrow('should not distribute table if there are no nodes in queue', async () => {
+            await tiesDB.distribute(tblHash, 5, 3);
+        });
+
+        await Promise.all([
+            registry.acceptRanges(true, {from: accounts[3]}),
+            registry.acceptRanges(true, {from: accounts[5]}),
+            registry.acceptRanges(true, {from: accounts[6]}),
+        ]);
+
+        await testRpc.assertThrow('should not distribute table if there are not enough nodes in queue', async () => {
+            await tiesDB.distribute(tblHash, 5, 4);
+        });
+
+        await tiesDB.distribute(tblHash, 2, 2);
+
+        let ranges = await tiesDB.getNodeTableRanges(accounts[4], tblHash);
+        assert.equal(ranges.length, 0, 'Inactive node should not receive ranges!');
+
+        ranges = await tiesDB.getNodeTableRanges(accounts[3], tblHash);
+        assert.equal(ranges.length, 2, 'First node should receive 2 ranges!');
+
+        ranges = await tiesDB.getNodeTableRanges(accounts[5], tblHash);
+        assert.equal(ranges.length, 1, 'Second node should receive 1 range!');
     });
 
 });

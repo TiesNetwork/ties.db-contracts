@@ -113,14 +113,35 @@ contract TiesDB is Ownable, TiesDBNodes {
         s.tsm[tsKey].tm[tKey].deleteTrigger(trKey);
     }
 
-    function hasTrigger(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public constant returns (bool) {
+    function hasTrigger(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public view returns (bool) {
         return s.tsm[tsKey].tm[tKey].hasTrigger(trKey);
     }
 
-    function getTriggerName(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public constant returns (string) {
+    function getTriggerName(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public view returns (string) {
         return s.tsm[tsKey].tm[tKey].trm[trKey].getTriggerName();
     }
 
     modifier onlyRegistry() { require(msg.sender == registry); _; }
+
+    function getNodes() public view returns (address[]) {
+        return s.nmis;
+    }
+
+    function getTableNodes(bytes32 tKey) public view returns (address[]) {
+        return s.getTable(tKey).nodes;
+    }
+
+    function getNodeTableRanges(address node, bytes32 tKey) public view returns (uint64[]) {
+        var n = s.nm[node];
+        return n.getRangesPack(tKey);
+    }
+
+    function distribute(bytes32 tKey, uint32 ranges, uint32 replicas) public {
+        s.distributeRanges(tKey, ranges, replicas);
+    }
+
+    function tableToTablespace(bytes32 tKey) public view returns (bytes32) {
+        return s.table_to_tablespace[tKey];
+    }
 
 }

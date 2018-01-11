@@ -7,8 +7,12 @@ import "./TLType.sol";
 library TLField {
     using TiesLibString for string;
 
+    function isEmpty(TLType.Field storage f) internal view returns (bool) {
+        return f.name.isEmpty();
+    }
+
     function getFieldName(TLType.Field storage f) internal view returns (string) {
-        require(!f.name.isEmpty());
+        require(!isEmpty(f));
         return f.name;
     }
 }
