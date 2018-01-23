@@ -13,8 +13,10 @@ interface TiesDBRestrictions {
 
     function canCreateTrigger(string tsName, string tName, string fName, address owner) public constant returns (bool);
     function canDeleteTrigger(string tsName, string tName, string fName, address owner) public constant returns (bool);
-}
 
+    function canCreateIndex(string tsName, string tName, string iName, address owner) public constant returns (bool);
+    function canDeleteIndex(string tsName, string tName, string iName, address owner) public constant returns (bool);
+}
 
 interface TiesDBNodes {
     function createNode(address _node) public;

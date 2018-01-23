@@ -94,17 +94,17 @@ library TLNode {
     }
 
     function getRangesPack(TLType.Node storage n, bytes32 tKey) internal view returns (uint64[]) {
-        var ranges = n.trm[tKey].ranges;
-        uint64[] memory pack = new uint64[](ranges.length);
-        for(uint i=0; i<pack.length; ++i){
-            var r = ranges[i];
-            pack[i] = (uint64(r.divider) << 32) | uint64(r.remainder);
-        }
-        return pack;
+        var rs = n.trm[tKey]; //In case the node does not contain table this function should return empty array
+        return rs.export();
     }
 
     function isEmpty(TLType.Node storage n) internal view returns (bool) {
         return n.idx == 0;
+    }
+
+    function export(TLType.Node storage n) internal view returns (bool inQueue, bytes32[] tables) {
+        inQueue = n.queue_idx > 0;
+        tables = n.tmis;
     }
 
 }

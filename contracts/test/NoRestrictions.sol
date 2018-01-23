@@ -15,4 +15,12 @@ contract NoRestrictions is TiesDBRestrictions {
 
     function canCreateTrigger(string, string, string, address) public constant returns (bool) { return true; }
     function canDeleteTrigger(string, string, string, address) public constant returns (bool) { return true; }
+
+    function canCreateIndex(string, string, string, address) public constant returns (bool) {
+        return true;
+    }
+
+    function canDeleteIndex(string, string, string, address) public constant returns (bool) {
+        return true;
+    }
 }

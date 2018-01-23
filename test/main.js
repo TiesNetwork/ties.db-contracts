@@ -1,5 +1,5 @@
 let TiesDB = artifacts.require("../contracts/structure/TiesDB.sol");
-let NoRestrictions = artifacts.require("./helpers/NoRestrictions.sol");
+let NoRestrictions = artifacts.require("../contracts/test/NoRestrictions.sol");
 const testRpc = require('./helpers/testRpc');
 
 const db = require('./helpers/db');

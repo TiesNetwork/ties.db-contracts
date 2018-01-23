@@ -1,7 +1,7 @@
 ﻿let TieToken = artifacts.require("./TieToken.sol");
 let Registry = artifacts.require("./Registry.sol");
 let TiesDB = artifacts.require("./TiesDB.sol");
-let NoRestrictions = artifacts.require("./helpers/NoRestrictions.sol");
+let NoRestrictions = artifacts.require("../contracts/test/NoRestrictions.sol");
 
 const testRpc = require('./helpers/testRpc');
 let EU = require("ethereumjs-util");

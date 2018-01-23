@@ -68,7 +68,11 @@ contract TiesDB is Ownable, TiesDBNodes {
     }
 
     function getTablespaceName(bytes32 tsKey) public constant returns (string) {
-        return s.tsm[tsKey].getTablespaceName();
+        return s.tsm[tsKey].getName();
+    }
+
+    function getTablespace(bytes32 tsKey) public constant returns (string name, address rs, bytes32[] tables) {
+        return s.tsm[tsKey].export();
     }
 
     function getTablespaceTablesKeys(bytes32 tsKey) public constant returns (bytes32[]) {
@@ -90,7 +94,12 @@ contract TiesDB is Ownable, TiesDBNodes {
     }
 
     function getTableName(bytes32 tsKey, bytes32 tKey) public constant returns (string) {
-        return s.tsm[tsKey].tm[tKey].getTableName();
+        return s.tsm[tsKey].tm[tKey].getName();
+    }
+
+    function getTable(bytes32 tsKey, bytes32 tKey) public constant returns (string name, string tsName,
+        bytes32[] fields, bytes32[] triggers, bytes32[] indexes, uint32 replicas, uint32 ranges, address[] nodes) {
+        return s.tsm[tsKey].tm[tKey].export();
     }
 
     function getTableFieldsKeys(bytes32 tsKey, bytes32 tKey) public constant returns (bytes32[]) {
@@ -106,7 +115,12 @@ contract TiesDB is Ownable, TiesDBNodes {
     }
 
     function getFieldName(bytes32 tsKey, bytes32 tKey, bytes32 fKey) public constant returns (string) {
-        return s.tsm[tsKey].tm[tKey].fm[fKey].getFieldName();
+        return s.tsm[tsKey].tm[tKey].fm[fKey].getName();
+    }
+
+    function getField(bytes32 tsKey, bytes32 tKey, bytes32 fKey) public constant returns (string name,
+        string fType, bytes def) {
+        return s.tsm[tsKey].tm[tKey].fm[fKey].export();
     }
 
     function deleteTrigger(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public returns (bytes32) {
@@ -118,13 +132,21 @@ contract TiesDB is Ownable, TiesDBNodes {
     }
 
     function getTriggerName(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public view returns (string) {
-        return s.tsm[tsKey].tm[tKey].trm[trKey].getTriggerName();
+        return s.tsm[tsKey].tm[tKey].trm[trKey].getName();
+    }
+
+    function getTrigger(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public view returns (string name, bytes payload) {
+        return s.tsm[tsKey].tm[tKey].trm[trKey].export();
     }
 
     modifier onlyRegistry() { require(msg.sender == registry); _; }
 
     function getNodes() public view returns (address[]) {
         return s.nmis;
+    }
+
+    function getNode(address node) public view returns (bool inQueue, bytes32[] tables) {
+        return s.nm[node].export();
     }
 
     function getTableNodes(bytes32 tKey) public view returns (address[]) {
@@ -143,5 +165,7 @@ contract TiesDB is Ownable, TiesDBNodes {
     function tableToTablespace(bytes32 tKey) public view returns (bytes32) {
         return s.table_to_tablespace[tKey];
     }
+
+
 
 }

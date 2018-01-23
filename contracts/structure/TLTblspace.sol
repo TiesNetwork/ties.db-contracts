@@ -53,9 +53,15 @@ library TLTblspace {
         return ts.tmis;
     }
 
-    function getTablespaceName(TLType.Tablespace storage ts) internal view returns (string) {
+    function getName(TLType.Tablespace storage ts) internal view returns (string) {
         require(!ts.name.isEmpty());
         return ts.name;
+    }
+
+    function export(TLType.Tablespace storage ts) internal view returns (string name, address rs, bytes32[] tables) {
+        name = ts.name;
+        rs = address(ts.rs);
+        tables = ts.tmis;
     }
 
 

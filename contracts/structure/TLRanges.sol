@@ -33,8 +33,17 @@ library TLRanges {
         return idx > 0;
     }
 
-    function isEmpty(TLType.Ranges rs) internal pure returns (bool) {
+    function isEmpty(TLType.Ranges storage rs) internal view returns (bool) {
         return rs.idx == 0;
+    }
+
+    function export(TLType.Ranges storage rs) internal view returns (uint64[]) {
+        uint64[] memory pack = new uint64[](rs.ranges.length);
+        for(uint i=0; i<pack.length; ++i){
+            var r = rs.ranges[i];
+            pack[i] = (uint64(r.divider) << 32) | uint64(r.remainder);
+        }
+        return pack;
     }
 
 }

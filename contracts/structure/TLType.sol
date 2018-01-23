@@ -33,6 +33,9 @@ library TLType {
         bytes32[] trmis; //Trigger mapping indexes
         mapping(bytes32 => Trigger) trm; //Trigger mapping
 
+        bytes32[] imis; //Index mapping indexes
+        mapping(bytes32 => Index) im; //Index mapping
+
         uint32 replicas;
         uint32 ranges;
 
@@ -75,5 +78,13 @@ library TLType {
 
         mapping(bytes32 => Ranges) trm; //Table range mapping: tKey => Ranges
         bytes32[] tmis; //Tables mapping indexes
+    }
+
+    struct Index {
+        uint128 idx;
+        byte iType; //0 - empty, 0x1 - primary, 0x2 - internal, 0x4 - external
+
+        string name;
+        bytes32[] fields;
     }
 }

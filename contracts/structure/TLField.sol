@@ -11,8 +11,14 @@ library TLField {
         return f.name.isEmpty();
     }
 
-    function getFieldName(TLType.Field storage f) internal view returns (string) {
+    function getName(TLType.Field storage f) internal view returns (string) {
         require(!isEmpty(f));
         return f.name;
+    }
+
+    function export(TLType.Field storage f) internal view returns (string name, string fType, bytes def) {
+        name = f.name;
+        fType = f.fType;
+        def = f.fDefault;
     }
 }
