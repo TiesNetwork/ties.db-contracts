@@ -2,11 +2,12 @@ pragma solidity ^0.4.15;
 
 import "./Util.sol";
 import "./TLType.sol";
-
+import "./TLTable.sol";
 
 library TLTblspace {
 
     using TiesLibString for string;
+    using TLTable for TLType.Table;
 
     function createTable(TLType.Tablespace storage ts, string tName) public returns (bytes32) {
         require(!tName.isEmpty());
@@ -45,16 +46,16 @@ library TLTblspace {
 
 
     function hasTable(TLType.Tablespace storage ts, bytes32 tKey) public view returns (bool) {
-        return !ts.tm[tKey].name.isEmpty();
+        return !ts.tm[tKey].isEmpty();
     }
 
     function getTablesKeys(TLType.Tablespace storage ts) internal view returns (bytes32[]) {
-        require(!ts.name.isEmpty());
+        require(!isEmpty(ts));
         return ts.tmis;
     }
 
     function getName(TLType.Tablespace storage ts) internal view returns (string) {
-        require(!ts.name.isEmpty());
+        require(!isEmpty(ts));
         return ts.name;
     }
 
@@ -62,6 +63,10 @@ library TLTblspace {
         name = ts.name;
         rs = address(ts.rs);
         tables = ts.tmis;
+    }
+
+    function isEmpty(TLType.Tablespace storage ts) internal view returns (bool){
+        return ts.name.isEmpty();
     }
 
 

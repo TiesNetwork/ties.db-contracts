@@ -79,12 +79,13 @@ library TLTable {
         return !t.trm[trKey].isEmpty();
     }
 
-    function createIndex(TLType.Table storage t, string iName, byte iType, bytes32[] storage fields) public returns (bytes32) {
+    function createIndex(TLType.Table storage t, string iName, uint8 iType, bytes32[] fields) public returns (bytes32) {
         require(iType == 1 || iType == 2 || iType == 4);
         require(fields.length > 0);
         for(uint i=0; i<fields.length; ++i){
             require(hasField(t, fields[i])); //We should have all the fields in the table
         }
+        require(iType != 1 || getPrimaryIndex(t) == 0); //We can not create second primary index
 
         var iKey = iName.hash();
         require(!hasIndex(t, iKey) && t.ts.rs.canCreateIndex(t.ts.name, t.name, iName, msg.sender));
@@ -106,6 +107,7 @@ library TLTable {
 
         var item = map[key];
         require(!item.isEmpty() && cont.ts.rs.canDeleteIndex(cont.ts.name, cont.name, item.name, msg.sender));
+        require(item.iType != 1); //We can not delete primary index
 
         assert(arr.length > 0); //If we are here then there must be table in array
         var idx = cont.idx;
@@ -139,10 +141,6 @@ library TLTable {
         return t.trmis;
     }
 
-    function isEmpty(TLType.Table storage t) internal view returns (bool) {
-        return t.name.isEmpty();
-    }
-
     function export(TLType.Table storage t) internal view returns (string name, string tsName,
         bytes32[] fields, bytes32[] triggers, bytes32[] indexes, uint32 replicas, uint32 ranges, address[] nodes) {
         name = t.name;
@@ -153,6 +151,19 @@ library TLTable {
         replicas = t.replicas;
         ranges = t.ranges;
         nodes = t.nodes;
+    }
+
+    function getPrimaryIndex(TLType.Table storage t) public view returns (bytes32){
+        for(uint i=0; i<t.imis.length; ++i){
+            var index = t.im[t.imis[i]];
+            if(index.iType == 1)
+                return t.imis[i];
+        }
+        return 0;
+    }
+
+    function isEmpty(TLType.Table storage t) internal view returns (bool) {
+        return t.name.isEmpty();
     }
 
 }

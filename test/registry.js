@@ -159,6 +159,11 @@ contract('Registry - TiesDB', async function (accounts) {
 
     it("should distribute", async function () {
         let tblHash = Db.getTableHash("tblspc", "tbl");
+        await tiesDB.createField(tblHash, "field1", "type", "0x");
+
+        await testRpc.assertThrow('should not distribute table if there is no primary index', async () => {
+            await tiesDB.distribute(tblHash, 2, 2);
+        });
 
         await testRpc.assertThrow('should not distribute table if there are no nodes in queue', async () => {
             await tiesDB.distribute(tblHash, 5, 3);
@@ -174,6 +179,7 @@ contract('Registry - TiesDB', async function (accounts) {
             await tiesDB.distribute(tblHash, 5, 4);
         });
 
+        await tiesDB.createIndex(tblHash, "key", 1, [Db.getHash("field1")]);
         await tiesDB.distribute(tblHash, 2, 2);
 
         let ranges = await tiesDB.getNodeTableRanges(accounts[4], tblHash);

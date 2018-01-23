@@ -82,7 +82,7 @@ library TLType {
 
     struct Index {
         uint128 idx;
-        byte iType; //0 - empty, 0x1 - primary, 0x2 - internal, 0x4 - external
+        uint8 iType; //0 - empty, 0x1 - primary, 0x2 - internal, 0x4 - external
 
         string name;
         bytes32[] fields;

@@ -7,6 +7,7 @@ import "./TLTable.sol";
 import "./TLField.sol";
 import "./TLTrigger.sol";
 import "./TLNode.sol";
+import "./TLIndex.sol";
 
 
 contract TiesDB is Ownable, TiesDBNodes {
@@ -17,6 +18,7 @@ contract TiesDB is Ownable, TiesDBNodes {
     using TLTblspace for TLType.Tablespace;
     using TLStorage for TLType.Storage;
     using TLNode for TLType.Node;
+    using TLIndex for TLType.Index;
 
     TLType.Storage private s;
     address private registry; //The registry contract that allows node manipulation
@@ -49,14 +51,9 @@ contract TiesDB is Ownable, TiesDBNodes {
         s.deleteTablespace(tsKey);
     }
 
-    function createField(bytes32 tsKey, bytes32 tKey,
+    function createField(bytes32 tKey,
         string fName, string fType, bytes fDefault) external returns (bytes32) {
-        return s.tsm[tsKey].tm[tKey].createField(fName, fType, fDefault);
-    }
-
-    function createTrigger(bytes32 tsKey, bytes32 tKey,
-        string trName, bytes payload) external returns (bytes32) {
-        return s.tsm[tsKey].tm[tKey].createTrigger(trName, payload);
+        return s.getTable(tKey).createField(fName, fType, fDefault);
     }
 
     function getTablespaceKeys() public constant returns (bytes32[]) {
@@ -93,50 +90,79 @@ contract TiesDB is Ownable, TiesDBNodes {
         return s.tsm[tsKey].hasTable(tKey);
     }
 
-    function getTableName(bytes32 tsKey, bytes32 tKey) public constant returns (string) {
-        return s.tsm[tsKey].tm[tKey].getName();
+    function hasTable(bytes32 tKey) public constant returns (bool) {
+        return s.table_to_tablespace[tKey] != 0;
     }
 
-    function getTable(bytes32 tsKey, bytes32 tKey) public constant returns (string name, string tsName,
+    function getTableName(bytes32 tKey) public constant returns (string) {
+        return s.getTable(tKey).getName();
+    }
+
+    function getTable(bytes32 tKey) public constant returns (string name, string tsName,
         bytes32[] fields, bytes32[] triggers, bytes32[] indexes, uint32 replicas, uint32 ranges, address[] nodes) {
-        return s.tsm[tsKey].tm[tKey].export();
+        return s.getTable(tKey).export();
     }
 
-    function getTableFieldsKeys(bytes32 tsKey, bytes32 tKey) public constant returns (bytes32[]) {
-        return s.tsm[tsKey].tm[tKey].getFieldsKeys();
+    function getTableFieldsKeys(bytes32 tKey) public constant returns (bytes32[]) {
+        return s.getTable(tKey).getFieldsKeys();
     }
 
-    function deleteField(bytes32 tsKey, bytes32 tKey, bytes32 fKey) public returns (bytes32) {
-        s.tsm[tsKey].tm[tKey].deleteField(fKey);
+    function deleteField(bytes32 tKey, bytes32 fKey) public {
+        s.getTable(tKey).deleteField(fKey);
     }
 
-    function hasField(bytes32 tsKey, bytes32 tKey, bytes32 fKey) public constant returns (bool) {
-        return s.tsm[tsKey].tm[tKey].hasField(fKey);
+    function hasField(bytes32 tKey, bytes32 fKey) public constant returns (bool) {
+        return s.getTable(tKey).hasField(fKey);
     }
 
-    function getFieldName(bytes32 tsKey, bytes32 tKey, bytes32 fKey) public constant returns (string) {
-        return s.tsm[tsKey].tm[tKey].fm[fKey].getName();
+    function getFieldName(bytes32 tKey, bytes32 fKey) public constant returns (string) {
+        return s.getTable(tKey).fm[fKey].getName();
     }
 
-    function getField(bytes32 tsKey, bytes32 tKey, bytes32 fKey) public constant returns (string name,
+    function getField(bytes32 tKey, bytes32 fKey) public constant returns (string name,
         string fType, bytes def) {
-        return s.tsm[tsKey].tm[tKey].fm[fKey].export();
+        return s.getTable(tKey).fm[fKey].export();
     }
 
-    function deleteTrigger(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public returns (bytes32) {
-        s.tsm[tsKey].tm[tKey].deleteTrigger(trKey);
+    function createTrigger(bytes32 tKey,
+        string trName, bytes payload) external returns (bytes32) {
+        return s.getTable(tKey).createTrigger(trName, payload);
     }
 
-    function hasTrigger(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public view returns (bool) {
-        return s.tsm[tsKey].tm[tKey].hasTrigger(trKey);
+    function deleteTrigger(bytes32 tKey, bytes32 trKey) public {
+        s.getTable(tKey).deleteTrigger(trKey);
     }
 
-    function getTriggerName(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public view returns (string) {
-        return s.tsm[tsKey].tm[tKey].trm[trKey].getName();
+    function hasTrigger(bytes32 tKey, bytes32 trKey) public view returns (bool) {
+        return s.getTable(tKey).hasTrigger(trKey);
     }
 
-    function getTrigger(bytes32 tsKey, bytes32 tKey, bytes32 trKey) public view returns (string name, bytes payload) {
-        return s.tsm[tsKey].tm[tKey].trm[trKey].export();
+    function getTriggerName(bytes32 tKey, bytes32 trKey) public view returns (string) {
+        return s.getTable(tKey).trm[trKey].getName();
+    }
+
+    function getTrigger(bytes32 tKey, bytes32 trKey) public view returns (string name, bytes payload) {
+        return s.getTable(tKey).trm[trKey].export();
+    }
+
+    function createIndex(bytes32 tKey, string iName, uint8 iType, bytes32[] fields) external returns (bytes32) {
+        return s.getTable(tKey).createIndex(iName, iType, fields);
+    }
+
+    function deleteIndex(bytes32 tKey, bytes32 iKey) public {
+        s.getTable(tKey).deleteIndex(iKey);
+    }
+
+    function hasIndex(bytes32 tKey, bytes32 iKey) public view returns (bool) {
+        return s.getTable(tKey).hasIndex(iKey);
+    }
+
+    function getIndexName(bytes32 tKey, bytes32 iKey) public view returns (string) {
+        return s.getTable(tKey).im[iKey].getName();
+    }
+
+    function getIndex(bytes32 tKey, bytes32 iKey) public view returns (string name, uint8 iType, bytes32[] fields) {
+        return s.getTable(tKey).im[iKey].export();
     }
 
     modifier onlyRegistry() { require(msg.sender == registry); _; }
@@ -159,6 +185,7 @@ contract TiesDB is Ownable, TiesDBNodes {
     }
 
     function distribute(bytes32 tKey, uint32 ranges, uint32 replicas) public {
+        require(uint(s.getTable(tKey).getPrimaryIndex()) != 0);
         s.distributeRanges(tKey, ranges, replicas);
     }
 
