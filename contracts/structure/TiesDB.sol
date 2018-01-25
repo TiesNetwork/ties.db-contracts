@@ -56,8 +56,8 @@ contract TiesDB is Ownable, TiesDBNodes {
         return s.getTable(tKey).createField(fName, fType, fDefault);
     }
 
-    function getTablespaceKeys() public constant returns (bytes32[]) {
-        return s.getTablespaceKeys();
+    function getStorage() public view returns (bytes32[] tablespaces, address[] nodes) {
+        return s.export();
     }
 
     function hasTablespace(bytes32 tsKey) public constant returns (bool) {
@@ -70,10 +70,6 @@ contract TiesDB is Ownable, TiesDBNodes {
 
     function getTablespace(bytes32 tsKey) public constant returns (string name, address rs, bytes32[] tables) {
         return s.tsm[tsKey].export();
-    }
-
-    function getTablespaceTablesKeys(bytes32 tsKey) public constant returns (bytes32[]) {
-        return s.tsm[tsKey].getTablesKeys();
     }
 
     function createTable(bytes32 tsKey, string tName) public returns (bytes32) {
@@ -101,10 +97,6 @@ contract TiesDB is Ownable, TiesDBNodes {
     function getTable(bytes32 tKey) public constant returns (string name, string tsName,
         bytes32[] fields, bytes32[] triggers, bytes32[] indexes, uint32 replicas, uint32 ranges, address[] nodes) {
         return s.getTable(tKey).export();
-    }
-
-    function getTableFieldsKeys(bytes32 tKey) public constant returns (bytes32[]) {
-        return s.getTable(tKey).getFieldsKeys();
     }
 
     function deleteField(bytes32 tKey, bytes32 fKey) public {

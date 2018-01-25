@@ -176,4 +176,9 @@ library TLStorage {
         if(queued) n.queue(s);
     }
 
+    function export(TLType.Storage storage s) internal view returns (bytes32[] tablespaces, address[] nodes) {
+        tablespaces = s.tsmis;
+        nodes = s.nmis;
+    }
+
 }

@@ -126,19 +126,9 @@ library TLTable {
         return !t.im[iKey].isEmpty();
     }
 
-    function getFieldsKeys(TLType.Table storage t) internal view returns (bytes32[]) {
-        require(!isEmpty(t));
-        return t.fmis;
-    }
-
     function getName(TLType.Table storage t) internal view returns (string) {
         require(!isEmpty(t));
         return t.name;
-    }
-
-    function getTriggersKeys(TLType.Table storage t) internal view returns (bytes32[]) {
-        require(!isEmpty(t));
-        return t.trmis;
     }
 
     function export(TLType.Table storage t) internal view returns (string name, string tsName,
