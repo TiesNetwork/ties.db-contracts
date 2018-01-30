@@ -7,19 +7,20 @@ import "./TLTable.sol";
 library TLTblspace {
 
     using TiesLibString for string;
+    using TiesLibString for bytes32;
     using TLTable for TLType.Table;
 
     function createTable(TLType.Tablespace storage ts, string tName) public returns (bytes32) {
-        require(!tName.isEmpty());
+        require(!tName.hash().isEmpty());
         var tKey = keccak256(ts.name, "#", tName);
+
         require(!hasTable(ts, tKey) && ts.rs.canCreateTable(ts.name, tName, msg.sender));
 
         var t = ts.tm[tKey];
+        ts.tmis.push(tKey);
         t.name = tName;
         t.ts = ts;
         t.idx = ts.tmis.length;
-
-        ts.tmis.push(tKey);
 
         return tKey;
     }
@@ -29,13 +30,13 @@ library TLTblspace {
         var arr = cont.tmis;
 
         var item = map[key];
-        require(!item.name.isEmpty() && cont.rs.canDeleteTable(cont.name, item.name, msg.sender));
+        require(!item.isEmpty() && cont.rs.canDeleteTable(cont.name, item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = item.idx;
+        var idx = item.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = idx;
+            map[arr[idx]].idx = idx + 1;
         }
 
         delete arr[arr.length-1];
@@ -44,8 +45,7 @@ library TLTblspace {
         delete map[key];
     }
 
-
-    function hasTable(TLType.Tablespace storage ts, bytes32 tKey) public view returns (bool) {
+    function hasTable(TLType.Tablespace storage ts, bytes32 tKey) internal view returns (bool) {
         return !ts.tm[tKey].isEmpty();
     }
 
@@ -66,7 +66,7 @@ library TLTblspace {
     }
 
     function isEmpty(TLType.Tablespace storage ts) internal view returns (bool){
-        return ts.name.isEmpty();
+        return ts.idx == 0;
     }
 
 

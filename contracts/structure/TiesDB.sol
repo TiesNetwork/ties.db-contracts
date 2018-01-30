@@ -1,6 +1,6 @@
 pragma solidity ^0.4.15;
 
-import "zeppelin/contracts/ownership/Ownable.sol";
+import "localhost/zeppelin/contracts/ownership/Ownable.sol";
 import "./TLStorage.sol";
 import "./TLTblspace.sol";
 import "./TLTable.sol";

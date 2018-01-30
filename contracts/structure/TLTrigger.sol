@@ -13,7 +13,7 @@ library TLTrigger {
     }
 
     function isEmpty(TLType.Trigger storage tr) internal view returns (bool) {
-        return tr.name.isEmpty();
+        return tr.idx == 0;
     }
 
     function export(TLType.Trigger storage tr) internal view returns (string name, bytes payload){

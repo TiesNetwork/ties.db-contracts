@@ -13,7 +13,7 @@ library TLIndex {
     }
 
     function isEmpty(TLType.Index storage index) internal view returns (bool) {
-        return index.iType == 0;
+        return index.idx == 0;
     }
 
     function export(TLType.Index storage index) internal view returns (string name, uint8 iType, bytes32[] fields) {

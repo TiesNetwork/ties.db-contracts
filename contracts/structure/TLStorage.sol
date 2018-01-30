@@ -4,21 +4,30 @@ import "./Util.sol";
 import "./TLType.sol";
 import "./TLNode.sol";
 import "./TLTable.sol";
+import "./TLTblspace.sol";
 
 
 library TLStorage {
 
     using TiesLibString for string;
+    using TiesLibString for bytes32;
     using TiesLibAddress for address;
     using TLNode for TLType.Node;
     using TLTable for TLType.Table;
+    using TLTblspace for TLType.Tablespace;
 
     function createTablespace(TLType.Storage storage s, string tsName, TiesDBRestrictions rs) public returns (bytes32) {
-        require(!tsName.isEmpty());
         var tsKey = tsName.hash();
+        require(!tsKey.isEmpty());
+
         require(!hasTablespace(s, tsKey) && !address(rs).isFree() && rs.canCreateTablespace(tsName, msg.sender));
-        s.tsm[tsKey] = TLType.Tablespace({name: tsName, rs: rs, idx: s.tsmis.length, tmis: new bytes32[](0)});
+
+        var ts = s.tsm[tsKey];
         s.tsmis.push(tsKey);
+        ts.name = tsName;
+        ts.idx = s.tsmis.length;
+        ts.rs = rs;
+
         return tsKey;
     }
 
@@ -27,13 +36,13 @@ library TLStorage {
         var arr = cont.tsmis;
 
         var item = map[key];
-        require(!item.name.isEmpty() && item.rs.canDeleteTablespace(item.name, msg.sender));
+        require(!item.isEmpty() && item.rs.canDeleteTablespace(item.name, msg.sender));
 
-        assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = item.idx;
+        assert(arr.length > 0); //If we are here then there must be item in array
+        var idx = item.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = idx;
+            map[arr[idx]].idx = idx + 1;
         }
 
         delete arr[arr.length-1];
@@ -120,7 +129,7 @@ library TLStorage {
     }
 
     function hasTablespace(TLType.Storage storage s, bytes32 tsKey) public constant returns (bool) {
-        return !s.tsm[tsKey].name.isEmpty();
+        return !s.tsm[tsKey].isEmpty();
     }
 
     function redistributeRange(TLType.Storage storage s, TLType.Node storage n,

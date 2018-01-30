@@ -6,7 +6,7 @@ import "./TiesDBAPI.sol";
 library TLType {
 
     struct Trigger {
-        uint256 idx; //Trigger mapping index
+        uint256 idx; //Trigger mapping index, one based
         Table t;
         string name;
 
@@ -14,7 +14,7 @@ library TLType {
     }
 
     struct Field {
-        uint256 idx;
+        uint256 idx; //One based
         Table t;
         string name;
 
@@ -23,7 +23,7 @@ library TLType {
     }
 
     struct Table {
-        uint256 idx;
+        uint256 idx; //One based
         Tablespace ts;
         string name;
 
@@ -43,7 +43,7 @@ library TLType {
     }
 
     struct Tablespace {
-        uint256 idx;
+        uint256 idx; //One based
         TiesDBRestrictions rs;
         string name;
         bytes32[] tmis;
@@ -81,7 +81,7 @@ library TLType {
     }
 
     struct Index {
-        uint128 idx;
+        uint128 idx; //One based
         uint8 iType; //0 - empty, 0x1 - primary, 0x2 - internal, 0x4 - external
 
         string name;

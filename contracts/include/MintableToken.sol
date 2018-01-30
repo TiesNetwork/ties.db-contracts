@@ -1,7 +1,7 @@
 pragma solidity ^0.4.18;
 
-import "zeppelin/contracts/token/StandardToken.sol";
-import "zeppelin/contracts/ownership/Ownable.sol";
+import "localhost/zeppelin/contracts/token/StandardToken.sol";
+import "localhost/zeppelin/contracts/ownership/Ownable.sol";
 
 /**
  * Mintable token

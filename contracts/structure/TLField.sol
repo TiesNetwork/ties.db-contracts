@@ -8,7 +8,7 @@ library TLField {
     using TiesLibString for string;
 
     function isEmpty(TLType.Field storage f) internal view returns (bool) {
-        return f.name.isEmpty();
+        return f.idx == 0;
     }
 
     function getName(TLType.Field storage f) internal view returns (string) {

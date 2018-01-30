@@ -10,16 +10,25 @@ import "./TLIndex.sol";
 library TLTable {
 
     using TiesLibString for string;
+    using TiesLibString for bytes32;
     using TLField for TLType.Field;
     using TLTrigger for TLType.Trigger;
     using TLIndex for TLType.Index;
 
     function createField(TLType.Table storage t, string fName,
             string fType, bytes fDefault) public returns (bytes32) {
+
         var fKey = fName.hash();
+        require(!fKey.isEmpty());
         require(!hasField(t, fKey) && t.ts.rs.canCreateField(t.ts.name, t.name, fName, msg.sender));
-        t.fm[fKey] = TLType.Field({name: fName, t: t, idx: t.fmis.length, fType: fType, fDefault: fDefault});
         t.fmis.push(fKey);
+
+        var f = t.fm[fKey];
+        f.idx = t.fmis.length;
+        f.name = fName;
+        f.fType = fType;
+        f.fDefault = fDefault;
+
         return fKey;
     }
 
@@ -31,10 +40,10 @@ library TLTable {
         require(!item.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = cont.idx;
+        var idx = item.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = idx;
+            map[arr[idx]].idx = idx + 1;
         }
 
         delete arr[arr.length-1];
@@ -45,9 +54,16 @@ library TLTable {
 
     function createTrigger(TLType.Table storage t, string trName, bytes payload) public returns (bytes32) {
         var trKey = trName.hash();
+        require(!trKey.isEmpty());
         require(!hasTrigger(t, trKey) && t.ts.rs.canCreateTrigger(t.ts.name, t.name, trName, msg.sender));
-        t.trm[trKey] = TLType.Trigger({name: trName, t: t, idx: t.trmis.length, payload: payload});
+
         t.trmis.push(trKey);
+
+        var tr = t.trm[trKey];
+        tr.name = trName;
+        tr.idx = t.trmis.length;
+        tr.payload = payload;
+
         return trKey;
     }
 
@@ -63,10 +79,10 @@ library TLTable {
         require(!item.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = cont.idx;
+        var idx = item.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = idx;
+            map[arr[idx]].idx = idx + 1;
         }
 
         delete arr[arr.length-1];
@@ -88,16 +104,17 @@ library TLTable {
         require(iType != 1 || getPrimaryIndex(t) == 0); //We can not create second primary index
 
         var iKey = iName.hash();
+        require(!iKey.isEmpty());
         require(!hasIndex(t, iKey) && t.ts.rs.canCreateIndex(t.ts.name, t.name, iName, msg.sender));
 
         var index = t.im[iKey];
+        t.imis.push(iKey);
 
         index.idx = uint128(t.imis.length);
         index.iType = iType;
         index.name = iName;
         index.fields = fields;
 
-        t.imis.push(iKey);
         return iKey;
     }
 
@@ -110,10 +127,10 @@ library TLTable {
         require(item.iType != 1); //We can not delete primary index
 
         assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = cont.idx;
+        var idx = cont.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = uint128(idx);
+            map[arr[idx]].idx = uint128(idx) + 1;
         }
 
         delete arr[arr.length-1];
@@ -122,7 +139,7 @@ library TLTable {
         delete map[key];
     }
 
-    function hasIndex(TLType.Table storage t, bytes32 iKey) public view returns (bool) {
+    function hasIndex(TLType.Table storage t, bytes32 iKey) internal view returns (bool) {
         return !t.im[iKey].isEmpty();
     }
 
@@ -153,7 +170,7 @@ library TLTable {
     }
 
     function isEmpty(TLType.Table storage t) internal view returns (bool) {
-        return t.name.isEmpty();
+        return t.idx == 0;
     }
 
 }

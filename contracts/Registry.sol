@@ -1,8 +1,8 @@
 pragma solidity ^0.4.18;
 
 
-import "zeppelin/contracts/token/ERC20.sol";
-import "zeppelin/contracts/math/SafeMath.sol";
+import "localhost/zeppelin/contracts/token/ERC20.sol";
+import "localhost/zeppelin/contracts/math/SafeMath.sol";
 import "./include/ERC23PayableReceiver.sol";
 import "./structure/TiesDBAPI.sol";
 
@@ -69,9 +69,17 @@ contract Registry is ERC23PayableReceiver {
         return users[user].sent[beneficiary].sent;
     }
 
+    function wtf(bool condition, string msg) internal returns (bool){
+        if(!condition)
+            Error(msg);
+        return condition;
+    }
+    
     function tokenFallback(address _from, uint _value, bytes _data) public payable {
-        require(msg.sender == address(token));
-        require(msg.value == 0); //Do not accept ether
+        if(wtf(msg.sender == address(token), "Wrong token")) return;
+        if(wtf(msg.value == 0, "Wrong value")) //Do not accept ether
+            return;
+        
         if (_data.length >= 4) {
             var val = (((((uint32(_data[0]) << 8) + uint32(_data[1])) << 8) + uint32(_data[2])) << 8) + uint32(_data[3]);
 
@@ -80,12 +88,16 @@ contract Registry is ERC23PayableReceiver {
             } else if (val == 1) {
                 addNodeDeposit(_from, _value);
             } else {
-                require(false); //Currently can only accept data with 0x 00 00 00 xx
+                wtf(false, "Wrong data"); //Currently can only accept data with 0x 00 00 00 xx
             }
         } else {
-            require(_data.length == 0); //Data should not be here!
+
+            if(wtf(_data.length == 0, "Non empty data")) //Data should not be here!
+                return;
+            
             addUserDeposit(_from, _value);
         }
+        wtf(false, "Was in tokenFallback");
     }
 
     /**

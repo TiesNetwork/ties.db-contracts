@@ -1,6 +1,6 @@
 pragma solidity ^0.4.18;
 
-import "../../contracts/structure/TiesDBAPI.sol";
+import "..//structure/TiesDBAPI.sol";
 
 contract NoRestrictions is TiesDBRestrictions {
     function canCreateTablespace(string, address) public constant returns (bool) { return true; }

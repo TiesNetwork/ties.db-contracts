@@ -9,18 +9,11 @@ library TiesLibString {
         return keccak256(s);
     }
 
+    function isEmpty(bytes32 h) internal pure returns (bool) {
+        return h == EMPTY_HASH;
+    }
+
     using TiesLibString for string;
-
-    function equals(string s, string x) internal pure returns (bool) {
-        bytes memory bs = bytes(s);
-        bytes memory bx = bytes(x);
-        return bs.length == bx.length && keccak256(bs) == keccak256(bx);
-    }
-
-    function isEmpty(string s) internal pure returns (bool) {
-        bytes memory bs = bytes(s);
-        return bs.length == 0;
-    }
 }
 
 
