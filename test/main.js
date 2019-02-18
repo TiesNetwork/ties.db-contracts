@@ -1,17 +1,15 @@
 let TiesDB = artifacts.require("../contracts/structure/TiesDB.sol");
 let NoRestrictions = artifacts.require("../contracts/test/NoRestrictions.sol");
+
+const logger = require('./helpers/logger');
+
 const testRpc = require('./helpers/testRpc');
 
 const db = require('./helpers/db');
 const getHash = db.getHash;
 const getTableHash = db.getTableHash;
 
-let secrets = [
-    "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3", //accounts[0]
-    "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f", //accounts[1]
-    "0x0dbbe8e4ae425a6d2687f1a7e3ba17bc98c673636790f1b8ad91193c05875ef1", //accounts[2]
-    "0xc88b703fb08cbea894b6aeff5a544fb92e78a18e19814cd85da83b71f772aa6c", //accounts[3]
-];
+logger.info("web3.version: " + web3.version);
 
 contract('TiesDB (Tablespaces)', async function (accounts) {
     debugger;
@@ -19,7 +17,7 @@ contract('TiesDB (Tablespaces)', async function (accounts) {
     let tiesDB, noRestrictions;
 
     before(async function(){
-        tiesDB = await TiesDB.deployed();
+        tiesDB = await TiesDB.new();
         noRestrictions = await NoRestrictions.new();
     });
 
@@ -70,65 +68,66 @@ contract('TiesDB (Tablespaces)', async function (accounts) {
     });
 });
 
-
 contract('TiesDB (Tables)', async function (accounts) {
     let tiesDB, noRestrictions, hashTblspc;
 
     before(async function(){
-        tiesDB = await TiesDB.deployed();
+        tiesDB = await TiesDB.new();
         noRestrictions = await NoRestrictions.new();
         await tiesDB.createTablespace("tblspc", noRestrictions.address);
+        let exists = await tiesDB.hasTablespace(getHash("tblspc"));
+        assert.ok(exists, "Tablespace was not created");
         hashTblspc = getHash("tblspc");
     });
 
     it("should not find inexistent table", async function () {
-        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl"));
+        let exists = await tiesDB.hasTable(getTableHash("tblspc", "tbl"));
         assert.ok(!exists, "Table should not exist yet");
     });
 
     it("should create table", async function () {
         await tiesDB.createTable(hashTblspc, "tbl");
 
-        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl"));
+        let exists = await tiesDB.hasTable(getTableHash("tblspc", "tbl"));
         assert.ok(exists, "Table should exist now");
     });
 
     it("should create other tables", async function () {
         await tiesDB.createTable(hashTblspc, "tbl2");
 
-        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl2"));
+        let exists = await tiesDB.hasTable(getTableHash("tblspc", "tbl2"));
         assert.ok(exists, "Table 2 should exist now");
 
         await tiesDB.createTable(hashTblspc, "tbl3");
 
-        exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl3"));
+        exists = await tiesDB.hasTable(getTableHash("tblspc", "tbl3"));
         assert.ok(exists, "Table 3 should exist now");
 
         let tsKey = await tiesDB.tableToTablespace(getTableHash("tblspc", "tbl3"));
-        assert.equal(tsKey, web3.fromAscii(hashTblspc), "We should be able to recover tablespace id from table id");
+        assert.equal(tsKey, hashTblspc, "We should be able to recover tablespace id from table id");
     });
 
     it("should delete table", async function () {
-        await tiesDB.deleteTable(hashTblspc, getTableHash("tblspc", "tbl2"));
+        await tiesDB.deleteTable(getTableHash("tblspc", "tbl2"));
 
-        let exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl2"));
+        let exists = await tiesDB.hasTable(getTableHash("tblspc", "tbl2"));
         assert.ok(!exists, "Table 2 should not exist now");
 
-        exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl3"));
+        exists = await tiesDB.hasTable(getTableHash("tblspc", "tbl3"));
         assert.ok(exists, "Table 3 should still exist");
 
         let tsKey = await tiesDB.tableToTablespace(getTableHash("tblspc", "tbl2"));
-        assert.ok(web3.toBigNumber(tsKey).eq(0), "Deleted table id should be removed from mapping");
+        assert.ok(web3.utils.toBN(tsKey).eq(web3.utils.toBN(0)), "Deleted table id should be removed from mapping");
     });
 
     it("should delete last table", async function () {
         let hash = getTableHash("tblspc", "tbl3");
-        await tiesDB.deleteTable(hashTblspc, hash);
+        await tiesDB.deleteTable(hash);
 
-        let exists = await tiesDB.hasTable(hashTblspc, hash);
+        let exists = await tiesDB.hasTable(hash);
         assert.ok(!exists, "Table 3 should not exist now");
 
-        exists = await tiesDB.hasTable(hashTblspc, getTableHash("tblspc", "tbl"));
+        exists = await tiesDB.hasTable(getTableHash("tblspc", "tbl"));
         assert.ok(exists, "First table should still exist");
     });
 });
@@ -137,7 +136,7 @@ contract('TiesDB (Fields)', async function (accounts) {
     let tiesDB, noRestrictions, hashTblspc, hashTbl;
 
     before(async function(){
-        tiesDB = await TiesDB.deployed();
+        tiesDB = await TiesDB.new();
         noRestrictions = await NoRestrictions.new();
         await tiesDB.createTablespace("tblspc", noRestrictions.address);
         hashTblspc = getHash("tblspc");
@@ -195,7 +194,7 @@ contract('TiesDB (Triggers)', async function (accounts) {
     let tiesDB, noRestrictions, hashTblspc, hashTbl;
 
     before(async function(){
-        tiesDB = await TiesDB.deployed();
+        tiesDB = await TiesDB.new();
         noRestrictions = await NoRestrictions.new();
         await tiesDB.createTablespace("tblspc", noRestrictions.address);
         hashTblspc = getHash("tblspc");
@@ -253,7 +252,7 @@ contract('TiesDB (Indexes)', async function (accounts) {
     let tiesDB, noRestrictions, hashTblspc, hashTbl;
 
     before(async function(){
-        tiesDB = await TiesDB.deployed();
+        tiesDB = await TiesDB.new();
         noRestrictions = await NoRestrictions.new();
         await tiesDB.createTablespace("tblspc", noRestrictions.address);
         hashTblspc = getHash("tblspc");
@@ -335,3 +334,5 @@ contract('TiesDB (Indexes)', async function (accounts) {
         assert.ok(exists, "First index should still exist");
     });
 });
+
+/**/

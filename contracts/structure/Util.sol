@@ -1,12 +1,12 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.5.0;
 
 
 library TiesLibString {
 
-    bytes32 private constant EMPTY_HASH = keccak256();
+    bytes32 private constant EMPTY_HASH = keccak256(abi.encodePacked());
 
-    function hash(string s) internal pure returns (bytes32) {
-        return keccak256(s);
+    function hash(string memory s) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(s));
     }
 
     function isEmpty(bytes32 h) internal pure returns (bool) {

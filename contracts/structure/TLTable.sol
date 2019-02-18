@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.5.0;
 
 import "./Util.sol";
 import "./TLType.sol";
@@ -15,15 +15,15 @@ library TLTable {
     using TLTrigger for TLType.Trigger;
     using TLIndex for TLType.Index;
 
-    function createField(TLType.Table storage t, string fName,
-            string fType, bytes fDefault) public returns (bytes32) {
+    function createField(TLType.Table storage t, string memory fName,
+            string memory fType, bytes memory fDefault) public returns (bytes32) {
 
-        var fKey = fName.hash();
+        bytes32 fKey = fName.hash();
         require(!fKey.isEmpty());
         require(!hasField(t, fKey) && t.ts.rs.canCreateField(t.ts.name, t.name, fName, msg.sender));
         t.fmis.push(fKey);
 
-        var f = t.fm[fKey];
+        TLType.Field storage f = t.fm[fKey];
         f.idx = t.fmis.length;
         f.name = fName;
         f.fType = fType;
@@ -33,33 +33,32 @@ library TLTable {
     }
 
     function deleteField(TLType.Table storage cont, bytes32 key) public {
-        var map = cont.fm;
-        var arr = cont.fmis;
+        bytes32[] storage arr = cont.fmis;
 
-        var item = map[key];
+        TLType.Field storage item = cont.fm[key];
         require(!item.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = item.idx - 1;
+        uint256 idx = item.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = idx + 1;
+            cont.fm[arr[idx]].idx = idx + 1;
         }
 
         delete arr[arr.length-1];
         arr.length--;
 
-        delete map[key];
+        delete cont.fm[key];
     }
 
-    function createTrigger(TLType.Table storage t, string trName, bytes payload) public returns (bytes32) {
-        var trKey = trName.hash();
+    function createTrigger(TLType.Table storage t, string memory trName, bytes memory payload) public returns (bytes32) {
+        bytes32 trKey = trName.hash();
         require(!trKey.isEmpty());
         require(!hasTrigger(t, trKey) && t.ts.rs.canCreateTrigger(t.ts.name, t.name, trName, msg.sender));
 
         t.trmis.push(trKey);
 
-        var tr = t.trm[trKey];
+        TLType.Trigger storage tr = t.trm[trKey];
         tr.name = trName;
         tr.idx = t.trmis.length;
         tr.payload = payload;
@@ -72,30 +71,29 @@ library TLTable {
     }
 
     function deleteTrigger(TLType.Table storage cont, bytes32 key) public {
-        var map = cont.trm;
-        var arr = cont.trmis;
+        bytes32[] storage arr = cont.trmis;
 
-        var item = map[key];
+        TLType.Trigger storage item = cont.trm[key];
         require(!item.isEmpty() && cont.ts.rs.canDeleteTrigger(cont.ts.name, cont.name, item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = item.idx - 1;
+        uint256 idx = item.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = idx + 1;
+            cont.trm[arr[idx]].idx = idx + 1;
         }
 
         delete arr[arr.length-1];
         arr.length--;
 
-        delete map[key];
+        delete cont.trm[key];
     }
 
     function hasTrigger(TLType.Table storage t, bytes32 trKey) public view returns (bool) {
         return !t.trm[trKey].isEmpty();
     }
 
-    function createIndex(TLType.Table storage t, string iName, uint8 iType, bytes32[] fields) public returns (bytes32) {
+    function createIndex(TLType.Table storage t, string memory iName, uint8 iType, bytes32[] memory fields) public returns (bytes32) {
         require(iType == 1 || iType == 2 || iType == 4);
         require(fields.length > 0);
         for(uint i=0; i<fields.length; ++i){
@@ -103,11 +101,11 @@ library TLTable {
         }
         require(iType != 1 || getPrimaryIndex(t) == 0); //We can not create second primary index
 
-        var iKey = iName.hash();
+        bytes32 iKey = iName.hash();
         require(!iKey.isEmpty());
         require(!hasIndex(t, iKey) && t.ts.rs.canCreateIndex(t.ts.name, t.name, iName, msg.sender));
 
-        var index = t.im[iKey];
+        TLType.Index storage index = t.im[iKey];
         t.imis.push(iKey);
 
         index.idx = uint128(t.imis.length);
@@ -119,37 +117,36 @@ library TLTable {
     }
 
     function deleteIndex(TLType.Table storage cont, bytes32 key) public {
-        var map = cont.im;
-        var arr = cont.imis;
+        bytes32[] storage arr = cont.imis;
 
-        var item = map[key];
+        TLType.Index storage item = cont.im[key];
         require(!item.isEmpty() && cont.ts.rs.canDeleteIndex(cont.ts.name, cont.name, item.name, msg.sender));
         require(item.iType != 1); //We can not delete primary index
 
         assert(arr.length > 0); //If we are here then there must be table in array
-        var idx = cont.idx - 1;
+        uint256 idx = cont.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = uint128(idx) + 1;
+            cont.im[arr[idx]].idx = uint128(idx) + 1;
         }
 
         delete arr[arr.length-1];
         arr.length--;
 
-        delete map[key];
+        delete cont.im[key];
     }
 
     function hasIndex(TLType.Table storage t, bytes32 iKey) internal view returns (bool) {
         return !t.im[iKey].isEmpty();
     }
 
-    function getName(TLType.Table storage t) internal view returns (string) {
+    function getName(TLType.Table storage t) internal view returns (string memory) {
         require(!isEmpty(t));
         return t.name;
     }
 
-    function export(TLType.Table storage t) internal view returns (string name, string tsName,
-        bytes32[] fields, bytes32[] triggers, bytes32[] indexes, uint32 replicas, uint32 ranges, address[] nodes) {
+    function export(TLType.Table storage t) internal view returns (string memory name, string memory tsName,
+        bytes32[] memory fields, bytes32[] memory triggers, bytes32[] memory indexes, uint32 replicas, uint32 ranges, address[] memory nodes) {
         name = t.name;
         tsName = t.ts.name;
         fields = t.fmis;
@@ -162,7 +159,7 @@ library TLTable {
 
     function getPrimaryIndex(TLType.Table storage t) public view returns (bytes32){
         for(uint i=0; i<t.imis.length; ++i){
-            var index = t.im[t.imis[i]];
+            TLType.Index storage index = t.im[t.imis[i]];
             if(index.iType == 1)
                 return t.imis[i];
         }

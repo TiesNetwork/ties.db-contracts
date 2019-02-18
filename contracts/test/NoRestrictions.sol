@@ -1,26 +1,26 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.0;
 
 import "..//structure/TiesDBAPI.sol";
 
 contract NoRestrictions is TiesDBRestrictions {
-    function canCreateTablespace(string, address) public constant returns (bool) { return true; }
-    function canDeleteTablespace(string, address) public constant returns (bool) { return true; }
+    function canCreateTablespace(string calldata, address) external view returns (bool) { return true; }
+    function canDeleteTablespace(string calldata, address) external view returns (bool) { return true; }
 
-    function canCreateTable(string, string, address) public constant returns (bool) { return true; }
-    function canDeleteTable(string, string, address) public constant returns (bool) { return true; }
-    function canDistributeRanges(string, string, address) public constant returns (bool) { return true; }
+    function canCreateTable(string calldata, string calldata, address) external view returns (bool) { return true; }
+    function canDeleteTable(string calldata, string calldata, address) external view returns (bool) { return true; }
+    function canDistributeRanges(string calldata, string calldata, address) external view returns (bool) { return true; }
 
-    function canCreateField(string, string, string, address) public constant returns (bool) { return true; }
-    function canDeleteField(string, string, string, address) public constant returns (bool) { return true; }
+    function canCreateField(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
+    function canDeleteField(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
 
-    function canCreateTrigger(string, string, string, address) public constant returns (bool) { return true; }
-    function canDeleteTrigger(string, string, string, address) public constant returns (bool) { return true; }
+    function canCreateTrigger(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
+    function canDeleteTrigger(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
 
-    function canCreateIndex(string, string, string, address) public constant returns (bool) {
+    function canCreateIndex(string calldata, string calldata, string calldata, address) external view returns (bool) {
         return true;
     }
 
-    function canDeleteIndex(string, string, string, address) public constant returns (bool) {
+    function canDeleteIndex(string calldata, string calldata, string calldata, address) external view returns (bool) {
         return true;
     }
 }

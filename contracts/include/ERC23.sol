@@ -1,6 +1,6 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.5.0;
 
-import "localhost/zeppelin/contracts/token/ERC20Basic.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 
 /*
@@ -8,8 +8,8 @@ import "localhost/zeppelin/contracts/token/ERC20Basic.sol";
  * ERC23 interface
  * see https://github.com/ethereum/EIPs/issues/223
  */
-contract ERC23 is ERC20Basic {
-    function transfer(address to, uint value, bytes data) public;
+contract ERC23 is ERC20 {
+    function transferData(address to, uint value, bytes memory data) public;
 
     event TransferData(address indexed from, address indexed to, uint value, bytes data);
 }

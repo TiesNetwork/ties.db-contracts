@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.5.0;
 
 import "./Util.sol";
 import "./TLType.sol";
@@ -16,13 +16,13 @@ library TLStorage {
     using TLTable for TLType.Table;
     using TLTblspace for TLType.Tablespace;
 
-    function createTablespace(TLType.Storage storage s, string tsName, TiesDBRestrictions rs) public returns (bytes32) {
-        var tsKey = tsName.hash();
+    function createTablespace(TLType.Storage storage s, string memory tsName, TiesDBRestrictions rs) public returns (bytes32) {
+        bytes32 tsKey = tsName.hash();
         require(!tsKey.isEmpty());
 
         require(!hasTablespace(s, tsKey) && !address(rs).isFree() && rs.canCreateTablespace(tsName, msg.sender));
 
-        var ts = s.tsm[tsKey];
+        TLType.Tablespace storage ts = s.tsm[tsKey];
         s.tsmis.push(tsKey);
         ts.name = tsName;
         ts.idx = s.tsmis.length;
@@ -32,23 +32,22 @@ library TLStorage {
     }
 
     function deleteTablespace(TLType.Storage storage cont, bytes32 key) public {
-        var map = cont.tsm;
-        var arr = cont.tsmis;
+        bytes32[] storage arr = cont.tsmis;
 
-        var item = map[key];
+        TLType.Tablespace storage item = cont.tsm[key];
         require(!item.isEmpty() && item.rs.canDeleteTablespace(item.name, msg.sender));
 
         assert(arr.length > 0); //If we are here then there must be item in array
-        var idx = item.idx - 1;
+        uint256 idx = item.idx - 1;
         if (arr.length > 1 && idx != arr.length-1) {
             arr[idx] = arr[arr.length-1];
-            map[arr[idx]].idx = idx + 1;
+            cont.tsm[arr[idx]].idx = idx + 1;
         }
 
         delete arr[arr.length-1];
         arr.length--;
 
-        delete map[key];
+        delete cont.tsm[key];
     }
 
     /**
@@ -56,7 +55,7 @@ library TLStorage {
     * Nodes should manually enter ranges distribution queue
     */
     function createNode(TLType.Storage storage s, address node) public {
-        var n = s.nm[node];
+        TLType.Node storage n = s.nm[node];
         if(n.isEmpty()){
             //Creating new node only if it was not created before
 //            s.tsmis.push(keccak256('sdfas'));
@@ -69,18 +68,17 @@ library TLStorage {
     * Deletes empty node from queue and all nodes list
     */
     function deleteNode(TLType.Storage storage s, address node) public {
-        var map = s.nm;
-        var item = map[node];
+        TLType.Node storage item = s.nm[node];
         require(item.idx > 0); //Node should exist
         require(item.tmis.length == 0); //Node should be empty of ranges to be removed
 
         { //Delete node from array of all nodes
-            var arr = s.nmis;
+            address[] storage arr = s.nmis;
             assert(arr.length > 0); //If we are here then there must be table in array
-            var idx = item.idx - 1; //One based
+            uint128 idx = item.idx - 1; //One based
             if (arr.length > 1 && idx != arr.length-1) {
                 arr[idx] = arr[arr.length-1];
-                map[arr[idx]].idx = idx + 1; //One based
+                s.nm[arr[idx]].idx = idx + 1; //One based
             }
             delete arr[arr.length-1];
             arr.length--;
@@ -88,17 +86,17 @@ library TLStorage {
 
         item.unqueue(s);
 
-        delete map[node];
+        delete s.nm[node];
     }
 
     function queueNode(TLType.Storage storage s, address node) public {
-        var item = s.nm[node];
+        TLType.Node storage item = s.nm[node];
         require(!item.isEmpty());
         item.queue(s);
     }
 
     function unqueueNode(TLType.Storage storage s, address node) public {
-        var item = s.nm[node];
+        TLType.Node storage item = s.nm[node];
         require(!item.isEmpty());
         item.unqueue(s);
     }
@@ -112,7 +110,7 @@ library TLStorage {
     function distributeRanges(TLType.Storage storage s, bytes32 tKey, uint32 ranges, uint32 replicas) public {
         require(s.queue.length >= replicas); //Can not distribute ranges when number of nodes is less than number of replicas
 
-        var table = getTable(s, tKey);
+        TLType.Table storage table = getTable(s, tKey);
         require(!table.isEmpty());
 
         require(table.ts.rs.canDistributeRanges(table.ts.name, table.name, msg.sender));
@@ -128,7 +126,7 @@ library TLStorage {
         }
     }
 
-    function hasTablespace(TLType.Storage storage s, bytes32 tsKey) public constant returns (bool) {
+    function hasTablespace(TLType.Storage storage s, bytes32 tsKey) public view returns (bool) {
         return !s.tsm[tsKey].isEmpty();
     }
 
@@ -154,9 +152,9 @@ library TLStorage {
     }
 
     function _redistributeTableRanges(TLType.Storage storage s, TLType.Node storage n, bytes32 tKey) private {
-        var rs = n.getRanges(tKey);
+        TLType.Ranges storage rs = n.getRanges(tKey);
         for(int i=int(rs.ranges.length)-1; i>=0; --i){
-            var r = rs.ranges[uint(i)];
+            TLType.Range storage r = rs.ranges[uint(i)];
             _redistributeRange(s, n, tKey, r.divider, r.remainder);
         }
     }
@@ -168,24 +166,32 @@ library TLStorage {
     }
 
     function getTable(TLType.Storage storage s, bytes32 tKey) internal view returns (TLType.Table storage) {
-        var tsKey = s.table_to_tablespace[tKey];
-        var ts = s.tsm[tsKey];
-        var table = ts.tm[tKey];
+        bytes32 tsKey = s.table_to_tablespace[tKey];
+        require(tsKey != 0);
+        TLType.Tablespace storage ts = s.tsm[tsKey];
+        TLType.Table storage table = ts.tm[tKey];
         require(!table.isEmpty());
         return table;
     }
 
-    function getTablespaceKeys(TLType.Storage storage s) internal view returns (bytes32[]) {
+    function deleteTable(TLType.Storage storage s, bytes32 tKey) internal {
+        bytes32 tsKey = s.table_to_tablespace[tKey];
+        require(tsKey != 0);
+        s.tsm[tsKey].deleteTable(tKey);
+        delete s.table_to_tablespace[tKey];
+    }
+
+    function getTablespaceKeys(TLType.Storage storage s) internal view returns (bytes32[] memory) {
         return s.tsmis;
     }
 
-    modifier unqueueOnExecution(TLType.Storage storage s, TLType.Node storage n){
+    modifier unqueueOnExecution(TLType.Storage storage s, TLType.Node storage n) {
         bool queued = n.unqueue(s);
         _;
         if(queued) n.queue(s);
     }
 
-    function export(TLType.Storage storage s) internal view returns (bytes32[] tablespaces, address[] nodes) {
+    function export(TLType.Storage storage s) internal view returns (bytes32[] memory tablespaces, address[] memory nodes) {
         tablespaces = s.tsmis;
         nodes = s.nmis;
     }

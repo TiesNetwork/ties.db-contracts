@@ -1,25 +1,25 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.5.0;
 
 interface TiesDBRestrictions {
-    function canCreateTablespace(string tsName, address owner) public constant returns (bool);
-    function canDeleteTablespace(string tsName, address owner) public constant returns (bool);
+    function canCreateTablespace(string calldata tsName, address owner) external  view returns (bool);
+    function canDeleteTablespace(string calldata tsName, address owner) external view returns (bool);
 
-    function canCreateTable(string tsName, string tName, address owner) public constant returns (bool);
-    function canDeleteTable(string tsName, string tName, address owner) public constant returns (bool);
-    function canDistributeRanges(string tsName, string tName, address owner) public constant returns (bool);
+    function canCreateTable(string calldata tsName, string calldata tName, address owner) external view returns (bool);
+    function canDeleteTable(string calldata tsName, string calldata tName, address owner) external view returns (bool);
+    function canDistributeRanges(string calldata tsName, string calldata tName, address owner) external view returns (bool);
 
-    function canCreateField(string tsName, string tName, string fName, address owner) public constant returns (bool);
-    function canDeleteField(string tsName, string tName, string fName, address owner) public constant returns (bool);
+    function canCreateField(string calldata tsName, string calldata tName, string calldata fName, address owner) external view returns (bool);
+    function canDeleteField(string calldata tsName, string calldata tName, string calldata fName, address owner) external view returns (bool);
 
-    function canCreateTrigger(string tsName, string tName, string fName, address owner) public constant returns (bool);
-    function canDeleteTrigger(string tsName, string tName, string fName, address owner) public constant returns (bool);
+    function canCreateTrigger(string calldata tsName, string calldata tName, string calldata fName, address owner) external view returns (bool);
+    function canDeleteTrigger(string calldata tsName, string calldata tName, string calldata fName, address owner) external view returns (bool);
 
-    function canCreateIndex(string tsName, string tName, string iName, address owner) public constant returns (bool);
-    function canDeleteIndex(string tsName, string tName, string iName, address owner) public constant returns (bool);
+    function canCreateIndex(string calldata tsName, string calldata tName, string calldata iName, address owner) external view returns (bool);
+    function canDeleteIndex(string calldata tsName, string calldata tName, string calldata iName, address owner) external view returns (bool);
 }
 
 interface TiesDBNodes {
-    function createNode(address _node) public;
-    function queueNode(address _node) public;
-    function unqueueNode(address _node) public;
+    function createNode(address _node) external;
+    function queueNode(address _node) external;
+    function unqueueNode(address _node) external;
 }
