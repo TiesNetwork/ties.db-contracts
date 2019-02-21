@@ -1,3 +1,0 @@
-CustomContracts.find().fetch().forEach(function(contract) {
-  CustomContracts.remove(contract._id);
-});
