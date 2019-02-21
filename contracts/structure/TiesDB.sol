@@ -181,6 +181,4 @@ contract TiesDB is Ownable, TiesDBNodes {
         return s.table_to_tablespace[tKey];
     }
 
-
-
 }
