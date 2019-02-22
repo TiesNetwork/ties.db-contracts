@@ -11,6 +11,9 @@
   },
   "author": "Dmitry Kochin <k@ties.network>",
   "license": "ISC",
+  "devDependencies": {
+    "ethereumjs-util": "^5.2.0"
+  },
   "dependencies": {
     "openzeppelin-solidity": "^2.1.2",
     "truffle": "^5.0.4"
