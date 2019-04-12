@@ -30,7 +30,7 @@ async function initAccounts(baseAccount, count) {
             let privateKey = secrets[i];
             let account = web3.eth.accounts.privateKeyToAccount(privateKey).address;
             try {
-                await web3.eth.personal.unlockAccount(account, '', 12600);
+                await web3.eth.personal.unlockAccount(account, '1', 12600);
                 logger.debug("unlocked " + account);
                 await fixBalance(baseAccount, account, amount);
                 accounts[i] = account;
@@ -39,7 +39,7 @@ async function initAccounts(baseAccount, count) {
                 logger.debug("creating " + account);
                 let createdAccount;
                 try {
-                    createdAccount = await web3.eth.personal.importRawKey(privateKey, '');
+                    createdAccount = await web3.eth.personal.importRawKey(privateKey, '1');
                 } catch (creationError) {
                     if(privateKey.substr(0, 2) === "0x") {
                         let trimmedPrivateKey = privateKey.substr(2);
@@ -55,7 +55,7 @@ async function initAccounts(baseAccount, count) {
                     }
                 }
                 assert.ok(account.toUpperCase() === createdAccount.toUpperCase(), "Account " + account + " creation failed");
-                await web3.eth.personal.unlockAccount(account, '', 12600);
+                await web3.eth.personal.unlockAccount(account, '1', 12600);
                 await fixBalance(baseAccount, account, amount);
                 accounts[i] = account;
             }
