@@ -44,7 +44,7 @@ async function initAccounts(baseAccount, count) {
                     if(privateKey.substr(0, 2) === "0x") {
                         let trimmedPrivateKey = privateKey.substr(2);
                         try {
-                            createdAccount = await web3.eth.personal.importRawKey(trimmedPrivateKey, '');
+                            createdAccount = await web3.eth.personal.importRawKey(trimmedPrivateKey, '1');
                         } catch (recreationError) {
                             logger.error(unlockingError);
                             assert.fail(recreationError);

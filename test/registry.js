@@ -19,6 +19,14 @@ const getSecret = acc.getSecret;
 const tok = require('./helpers/tokens');
 const asTokens = tok.asTokens;
 
+const getTiesDB = (() => {
+    if(process.env.TRUFFLE_TEST_TIESDB_ADDR) {
+        return async () => await TiesDB.at(process.env.TRUFFLE_TEST_TIESDB_ADDR);
+    } else {
+        return async () => undefined;
+    }
+})();
+
 contract('Registry', async function (clientAccounts) {
 
     let tokenContract;
@@ -36,9 +44,9 @@ contract('Registry', async function (clientAccounts) {
         accounts = await getAccounts(clientAccounts[0], 4);
 
         tokenContract = await TieToken.new(accounts[3]);
-        logger.debug("TieToken.address = " + tokenContract.address);
+        logger.info("TieToken.address = " + tokenContract.address);
         await tokenContract.setMinter(accounts[0], {from: accounts[3]});
-        logger.debug("TieToken.minter = " + accounts[0]);
+        logger.info("TieToken.minter = " + accounts[0]);
         await tokenContract.enableTransfer(true, {from: accounts[3]});
 
         await Promise.all([
@@ -46,17 +54,19 @@ contract('Registry', async function (clientAccounts) {
             tokenContract.mint(accounts[1], asTokens(2000), {from: accounts[0]}),
             tokenContract.mint(accounts[2], asTokens(5000), {from: accounts[0]}),
         ]);
-
-        tiesDB = await TiesDB.new();
-        logger.debug("TiesDB.address = " + tiesDB.address);
+        let tiesDBsame = await getTiesDB();
+        tiesDB = tiesDBsame || await TiesDB.new();
+        logger.info("TiesDB.address = " + tiesDB.address);
         registry = await Registry.new(tokenContract.address, tiesDB.address);
-        logger.debug("Registry.address = " + registry.address);
+        logger.info("Registry.address = " + registry.address);
 
         await tokenContract.approve(registry.address, asTokens(1000), {from: accounts[0]});
         await tokenContract.approve(registry.address, asTokens(2000), {from: accounts[1]});
         await tokenContract.approve(registry.address, asTokens(2000), {from: accounts[2]});
 
-        await tiesDB.setRegistry(registry.address);
+        if(tiesDBsame !== tiesDB) {
+            await tiesDB.setRegistry(registry.address);
+        }
     });
 
     it("should users add deposits by transfer", async function () {
@@ -135,9 +145,9 @@ contract('Registry - TiesDB', async function (clientAccounts) {
         accounts = await getAccounts(clientAccounts[0], 7);
 
         tokenContract = await TieToken.new(accounts[3]);
-        logger.debug("TieToken.address = " + tokenContract.address);
+        logger.info("TieToken.address = " + tokenContract.address);
         await tokenContract.setMinter(accounts[0], {from: accounts[3]});
-        logger.debug("TieToken.minter = " + accounts[0]);
+        logger.info("TieToken.minter = " + accounts[0]);
         await tokenContract.enableTransfer(true, {from: accounts[3]});
 
         await Promise.all([
@@ -149,12 +159,15 @@ contract('Registry - TiesDB', async function (clientAccounts) {
             tokenContract.mint(accounts[5], asTokens(5000), {from: accounts[0]}),
             tokenContract.mint(accounts[6], asTokens(5000), {from: accounts[0]}),
         ]);
-
-        tiesDB = await TiesDB.new();
-        logger.debug("TiesDB.address = " + tiesDB.address);
+        let tiesDBsame = await getTiesDB();
+        tiesDB = tiesDBsame || await TiesDB.new();
+        logger.info("TiesDB.address = " + tiesDB.address);
         registry = await Registry.new(tokenContract.address, tiesDB.address);
-        logger.debug("Registry.address = " + registry.address);
-        await tiesDB.setRegistry(registry.address);
+        logger.info("Registry.address = " + registry.address);
+
+        if(tiesDBsame !== tiesDB) {
+            await tiesDB.setRegistry(registry.address);
+        }
 
         noRestrictions = await NoRestrictions.new()
     });

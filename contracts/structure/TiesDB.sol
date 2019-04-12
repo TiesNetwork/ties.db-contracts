@@ -10,7 +10,7 @@ import "./TLNode.sol";
 import "./TLIndex.sol";
 
 
-contract TiesDB is Ownable, TiesDBNodes {
+contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
     
     using TLField for TLType.Field;
     using TLTrigger for TLType.Trigger;
@@ -60,54 +60,54 @@ contract TiesDB is Ownable, TiesDBNodes {
         return s.export();
     }
 
-    function hasTablespace(bytes32 tsKey) public view returns (bool) {
+    function hasTablespace(bytes32 tsKey) external view returns (bool) {
         return s.hasTablespace(tsKey);
     }
 
-    function getTablespaceName(bytes32 tsKey) public view returns (string memory) {
+    function getTablespaceName(bytes32 tsKey) external view returns (string memory) {
         return s.tsm[tsKey].getName();
     }
 
-    function getTablespace(bytes32 tsKey) public view returns (string memory name, address rs, bytes32[] memory tables) {
+    function getTablespace(bytes32 tsKey) external view returns (string memory name, address rs, bytes32[] memory tables) {
         return s.tsm[tsKey].export();
     }
 
-    function createTable(bytes32 tsKey, string memory tName) public returns (bytes32) {
+    function createTable(bytes32 tsKey, string calldata tName) external returns (bytes32) {
         bytes32 tKey = s.tsm[tsKey].createTable(tName);
         s.table_to_tablespace[tKey] = tsKey;
         return tKey;
     }
 
-    function deleteTable(bytes32 tKey) public {
+    function deleteTable(bytes32 tKey) external {
         s.deleteTable(tKey);
     }
 
-    function hasTable(bytes32 tKey) public view returns (bool) {
+    function hasTable(bytes32 tKey) external view returns (bool) {
         return s.table_to_tablespace[tKey] != 0;
     }
 
-    function getTableName(bytes32 tKey) public view returns (string memory) {
+    function getTableName(bytes32 tKey) external view returns (string memory) {
         return s.getTable(tKey).getName();
     }
 
-    function getTable(bytes32 tKey) public view returns (string memory name, string memory tsName,
+    function getTable(bytes32 tKey) external view returns (string memory name, string memory tsName,
         bytes32[] memory fields, bytes32[] memory triggers, bytes32[] memory indexes, uint32 replicas, uint32 ranges, address[] memory nodes) {
         return s.getTable(tKey).export();
     }
 
-    function deleteField(bytes32 tKey, bytes32 fKey) public {
+    function deleteField(bytes32 tKey, bytes32 fKey) external {
         s.getTable(tKey).deleteField(fKey);
     }
 
-    function hasField(bytes32 tKey, bytes32 fKey) public view returns (bool) {
+    function hasField(bytes32 tKey, bytes32 fKey) external view returns (bool) {
         return s.getTable(tKey).hasField(fKey);
     }
 
-    function getFieldName(bytes32 tKey, bytes32 fKey) public view returns (string memory) {
+    function getFieldName(bytes32 tKey, bytes32 fKey) external view returns (string memory) {
         return s.getTable(tKey).fm[fKey].getName();
     }
 
-    function getField(bytes32 tKey, bytes32 fKey) public view returns (string memory name,
+    function getField(bytes32 tKey, bytes32 fKey) external view returns (string memory name,
         string memory fType, bytes memory def) {
         return s.getTable(tKey).fm[fKey].export();
     }
@@ -117,19 +117,19 @@ contract TiesDB is Ownable, TiesDBNodes {
         return s.getTable(tKey).createTrigger(trName, payload);
     }
 
-    function deleteTrigger(bytes32 tKey, bytes32 trKey) public {
+    function deleteTrigger(bytes32 tKey, bytes32 trKey) external {
         s.getTable(tKey).deleteTrigger(trKey);
     }
 
-    function hasTrigger(bytes32 tKey, bytes32 trKey) public view returns (bool) {
+    function hasTrigger(bytes32 tKey, bytes32 trKey) external view returns (bool) {
         return s.getTable(tKey).hasTrigger(trKey);
     }
 
-    function getTriggerName(bytes32 tKey, bytes32 trKey) public view returns (string memory) {
+    function getTriggerName(bytes32 tKey, bytes32 trKey) external view returns (string memory) {
         return s.getTable(tKey).trm[trKey].getName();
     }
 
-    function getTrigger(bytes32 tKey, bytes32 trKey) public view returns (string memory name, bytes memory payload) {
+    function getTrigger(bytes32 tKey, bytes32 trKey) external view returns (string memory name, bytes memory payload) {
         return s.getTable(tKey).trm[trKey].export();
     }
 
@@ -137,47 +137,47 @@ contract TiesDB is Ownable, TiesDBNodes {
         return s.getTable(tKey).createIndex(iName, iType, fields);
     }
 
-    function deleteIndex(bytes32 tKey, bytes32 iKey) public {
+    function deleteIndex(bytes32 tKey, bytes32 iKey) external {
         s.getTable(tKey).deleteIndex(iKey);
     }
 
-    function hasIndex(bytes32 tKey, bytes32 iKey) public view returns (bool) {
+    function hasIndex(bytes32 tKey, bytes32 iKey) external view returns (bool) {
         return s.getTable(tKey).hasIndex(iKey);
     }
 
-    function getIndexName(bytes32 tKey, bytes32 iKey) public view returns (string memory) {
+    function getIndexName(bytes32 tKey, bytes32 iKey) external view returns (string memory) {
         return s.getTable(tKey).im[iKey].getName();
     }
 
-    function getIndex(bytes32 tKey, bytes32 iKey) public view returns (string memory name, uint8 iType, bytes32[] memory fields) {
+    function getIndex(bytes32 tKey, bytes32 iKey) external view returns (string memory name, uint8 iType, bytes32[] memory fields) {
         return s.getTable(tKey).im[iKey].export();
     }
 
     modifier onlyRegistry() { require(msg.sender == registry); _; }
 
-    function getNodes() public view returns (address[] memory) {
+    function getNodes() external view returns (address[] memory) {
         return s.nmis;
     }
 
-    function getNode(address node) public view returns (bool inQueue, bytes32[] memory tables) {
+    function getNode(address node) external view returns (bool inQueue, bytes32[] memory tables) {
         return s.nm[node].export();
     }
 
-    function getTableNodes(bytes32 tKey) public view returns (address[] memory) {
+    function getTableNodes(bytes32 tKey) external view returns (address[] memory) {
         return s.getTable(tKey).nodes;
     }
 
-    function getNodeTableRanges(address node, bytes32 tKey) public view returns (uint64[] memory) {
+    function getNodeTableRanges(address node, bytes32 tKey) external view returns (uint64[] memory) {
         TLType.Node storage n = s.nm[node];
         return n.getRangesPack(tKey);
     }
 
-    function distribute(bytes32 tKey, uint32 ranges, uint32 replicas) public {
+    function distribute(bytes32 tKey, uint32 ranges, uint32 replicas) external {
         require(uint(s.getTable(tKey).getPrimaryIndex()) != 0);
         s.distributeRanges(tKey, ranges, replicas);
     }
 
-    function tableToTablespace(bytes32 tKey) public view returns (bytes32) {
+    function tableToTablespace(bytes32 tKey) external view returns (bytes32) {
         return s.table_to_tablespace[tKey];
     }
 

@@ -101,10 +101,11 @@ library TLStorage {
         item.unqueue(s);
     }
 
-    function distributeRange(TLType.Storage storage s, bytes32 tKey, uint32 divider, uint32 remainder) public {
+    function distributeRange(TLType.Storage storage s, bytes32 tKey, uint32 divider, uint32 remainder) public returns (address) {
         address node = s.queue[s.queue_head];
         s.queue_head = uint128((s.queue_head+1) % s.queue.length);
         s.nm[node].distributeRange(tKey, divider, remainder);
+        return node;
     }
 
     function distributeRanges(TLType.Storage storage s, bytes32 tKey, uint32 ranges, uint32 replicas) public {
@@ -118,10 +119,11 @@ library TLStorage {
         require(table.replicas == 0 && table.ranges == 0);
         table.replicas = replicas;
         table.ranges = ranges;
-
+        
         for ( uint r=0; r < replicas; ++r ) {
             for ( uint32 d=0; d < ranges; ++d ) {
-                distributeRange(s, tKey, ranges, d);
+               address nodeAddress = distributeRange(s, tKey, ranges, d);
+               tableAddNode(table, nodeAddress);
             }
         }
     }
@@ -194,6 +196,15 @@ library TLStorage {
     function export(TLType.Storage storage s) internal view returns (bytes32[] memory tablespaces, address[] memory nodes) {
         tablespaces = s.tsmis;
         nodes = s.nmis;
+    }
+
+    function tableAddNode(TLType.Table storage table, address nodeAddress) internal {
+        for(int i=int(table.nodes.length)-1; i>=0; --i) {
+            if(table.nodes[uint256(i)] == nodeAddress) {
+                return;
+            }
+        }
+        table.nodes.push(nodeAddress);
     }
 
 }

@@ -1,4 +1,4 @@
-let logLevel = 1;
+let logLevel = process.env.TRUFFLE_TEST_LOG_LEVEL || 0;
 
 function register(level, command) {
     if(logLevel < level) {
