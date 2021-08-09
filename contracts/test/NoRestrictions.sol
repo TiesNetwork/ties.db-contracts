@@ -16,11 +16,6 @@ contract NoRestrictions is TiesDBRestrictions {
     function canCreateTrigger(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
     function canDeleteTrigger(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
 
-    function canCreateIndex(string calldata, string calldata, string calldata, address) external view returns (bool) {
-        return true;
-    }
-
-    function canDeleteIndex(string calldata, string calldata, string calldata, address) external view returns (bool) {
-        return true;
-    }
+    function canCreateIndex(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
+    function canDeleteIndex(string calldata, string calldata, string calldata, address) external view returns (bool) { return true; }
 }

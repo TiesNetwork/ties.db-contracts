@@ -154,7 +154,7 @@ library TLTable {
         indexes = t.imis;
         replicas = t.replicas;
         ranges = t.ranges;
-        nodes = t.nodes;
+        nodes = t.na;
     }
 
     function getPrimaryIndex(TLType.Table storage t) public view returns (bytes32){

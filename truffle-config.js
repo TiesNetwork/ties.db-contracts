@@ -7,7 +7,7 @@ module.exports = {
       network_id: 1337
     },
     devlocal: {
-      host: "localhost",
+      host: "127.0.0.1",
       port: 18545,
       network_id: 1337, // Match geth development network id
     }

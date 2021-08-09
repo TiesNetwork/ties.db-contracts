@@ -23,24 +23,32 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
     TLType.Storage private s;
     address private registry; //The registry contract that allows node manipulation
 
-    function setRegistry (address _registry) onlyOwner public {
-        registry = _registry;
+    function setRegistry (address registryAddress) onlyOwner public {
+        registry = registryAddress;
     }
 
-    function createNode(address _node) onlyRegistry public {
-        s.createNode(_node);
+    function createNode(address nodeAddress) onlyRegistry public {
+        s.createNode(nodeAddress);
     }
 
-    function queueNode(address _node) onlyRegistry public {
-        TLType.Node storage n = s.nm[_node];
+    function queueNode(address nodeAddress) onlyRegistry public {
+        TLType.Node storage n = s.nm[nodeAddress];
         require(!n.isEmpty());
         n.queue(s);
     }
 
-    function unqueueNode(address _node) onlyRegistry public {
-        TLType.Node storage n = s.nm[_node];
+    function unqueueNode(address nodeAddress) onlyRegistry public {
+        TLType.Node storage n = s.nm[nodeAddress];
         require(!n.isEmpty());
         n.unqueue(s);
+    }
+
+    function displaceNode(address nodeAddress) onlyAuthorized(nodeAddress) public returns (address) {
+        return s.displaceNode(nodeAddress);
+    }
+
+    function deleteNode(address nodeAddress) onlyAuthorized(nodeAddress) public {
+        return s.deleteNode(nodeAddress);
     }
 
     function createTablespace(string calldata tsName, TiesDBRestrictions rs) external returns (bytes32) {
@@ -153,7 +161,15 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
         return s.getTable(tKey).im[iKey].export();
     }
 
-    modifier onlyRegistry() { require(msg.sender == registry); _; }
+    modifier onlyRegistry() {
+        require(msg.sender == registry);
+        _;
+    }
+
+    modifier onlyAuthorized(address owner) {
+        require(msg.sender == registry || msg.sender == owner);
+        _;
+    }
 
     function getNodes() external view returns (address[] memory) {
         return s.nmis;
@@ -164,7 +180,7 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
     }
 
     function getTableNodes(bytes32 tKey) external view returns (address[] memory) {
-        return s.getTable(tKey).nodes;
+        return s.getTable(tKey).na;
     }
 
     function getNodeTableRanges(address node, bytes32 tKey) external view returns (uint64[] memory) {
@@ -172,13 +188,13 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
         return n.getRangesPack(tKey);
     }
 
+    function tableToTablespace(bytes32 tKey) external view returns (bytes32) {
+        return s.table_to_tablespace[tKey];
+    }
+
     function distribute(bytes32 tKey, uint32 ranges, uint32 replicas) external {
         require(uint(s.getTable(tKey).getPrimaryIndex()) != 0);
         s.distributeRanges(tKey, ranges, replicas);
-    }
-
-    function tableToTablespace(bytes32 tKey) external view returns (bytes32) {
-        return s.table_to_tablespace[tKey];
     }
 
 }

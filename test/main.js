@@ -334,5 +334,4 @@ contract('TiesDB (Indexes)', async function (accounts) {
         assert.ok(exists, "First index should still exist");
     });
 });
-
 /**/

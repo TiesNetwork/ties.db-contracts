@@ -22,6 +22,8 @@ interface TiesDBNodes {
     function createNode(address _node) external;
     function queueNode(address _node) external;
     function unqueueNode(address _node) external;
+    function deleteNode(address node) external;
+    function displaceNode(address node) external returns (address);
 }
 
 interface TiesDBSchema {
@@ -57,9 +59,9 @@ interface TiesDBSchema {
 
     function getNodes() external view returns (address[] memory);
     function getNode(address node) external view returns (bool inQueue, bytes32[] memory tables);
-    function getTableNodes(bytes32 tKey) external view returns (address[] memory);
-    function getNodeTableRanges(address node, bytes32 tKey) external view returns (uint64[] memory);
+    function getTableNodes(bytes32 tKey) external view returns (address[] memory nodeAddresses);
+    function getNodeTableRanges(address node, bytes32 tKey) external view returns (uint64[] memory tRanges);
 
-    function tableToTablespace(bytes32 tKey) external view returns (bytes32);
+    function tableToTablespace(bytes32 tKey) external view returns (bytes32 tsKey);
     function distribute(bytes32 tKey, uint32 ranges, uint32 replicas) external;
 }
