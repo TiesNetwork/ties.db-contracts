@@ -145,7 +145,7 @@ library TLTable {
         return t.name;
     }
 
-    function export(TLType.Table storage t) internal view returns (string memory name, string memory tsName,
+    function export(TLType.Table storage t, TLType.Storage storage s) internal view returns (string memory name, string memory tsName,
         bytes32[] memory fields, bytes32[] memory triggers, bytes32[] memory indexes, uint32 replicas, uint32 ranges, address[] memory nodes) {
         name = t.name;
         tsName = t.ts.name;
@@ -154,7 +154,14 @@ library TLTable {
         indexes = t.imis;
         replicas = t.replicas;
         ranges = t.ranges;
-        nodes = t.na;
+        nodes = exportNodes(t, s);
+    }
+
+    function exportNodes(TLType.Table storage t, TLType.Storage storage s) internal view returns (address[] memory nodes) {
+        nodes = new address[](t.nid.length);
+        for (uint i = 0; i < t.nid.length; i++) {
+            nodes[i] = s.nmis[t.nid[i]-1];
+        }
     }
 
     function getPrimaryIndex(TLType.Table storage t) public view returns (bytes32){

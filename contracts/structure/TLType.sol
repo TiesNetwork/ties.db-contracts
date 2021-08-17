@@ -39,8 +39,8 @@ library TLType {
         uint32 replicas;
         uint32 ranges;
 
-        address[] na; //Node addresses (0 based)
-        mapping(address => uint) nam; //Node address mapping (1 based) subtraction needed
+        uint[] nid; //Node global ids (0 based)
+        mapping(uint => uint) nidm; //Node global id mapping (1 based) subtraction needed
     }
 
     struct Tablespace {
@@ -57,7 +57,10 @@ library TLType {
         mapping(bytes32 => bytes32) table_to_tablespace; //Table to tablespace relation
 
         address[] nmis; //Nodes mapping ids
+        mapping(address => uint[]) nim; //Nodes id mapping (1 based) subtraction needed
         mapping(address => Node) nm; //Nodes mapping
+
+        mapping(uint => TableRangeMap) trm; //Map of table ranges for node id
 
         address[] queue; //Queue for registering ranges
         uint queueHead; //The head of the queue (0 based)
@@ -76,8 +79,6 @@ library TLType {
     struct Node {
         uint idx; //Index in all nodes array (1 based)
         uint queueIdx; //Index in queue (1 based)
-
-        TableRangeMap trm;
     }
 
     struct TableRangeMap {

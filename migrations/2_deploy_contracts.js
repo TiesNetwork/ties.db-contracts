@@ -19,6 +19,10 @@ function asWei(amount, unit) {
 
 module.exports = async function(deployer, network, accounts) {
 
+  if(process.env.TRUFFLE_SKIP_MIGRATIONS === 'Y') {
+    return;
+  }
+
   deployer.deploy(TLRanges);
   deployer.link(TLRanges, TLNode);
 

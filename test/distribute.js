@@ -58,6 +58,7 @@ contract('TiesDB (distribute)', async function (accounts) {
         assert.ok(arrayEquals(allNodes, tableNodes), 'table should be distributed to all nodes');
     });
 });
+/**/
 
 contract('TiesDB (displace)', async function (accounts) {
     let tiesDB, noRestrictions, hashTblspc, hashTbl;
@@ -73,6 +74,7 @@ contract('TiesDB (displace)', async function (accounts) {
         let displaced = await tiesDB.displaceNode(deadNode, {from: deadNode});
         assert.ok(displaced != deadNode, 'node was not displaced properly');
         let newTableNodes = await tiesDB.getTableNodes(hashTbl);
+        //assert.fail('queue: '+(await tiesDB.getQueueHead())+' of '+(await tiesDB.getQueue())+'\n'+tableNodes+'\n'+newTableNodes);
         assert.ok(!newTableNodes.includes(deadNode), 'table should now be distributed to new node');
     });
 });

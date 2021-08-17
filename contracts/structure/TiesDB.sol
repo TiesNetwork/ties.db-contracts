@@ -11,7 +11,7 @@ import "./TLIndex.sol";
 
 
 contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
-    
+
     using TLField for TLType.Field;
     using TLTrigger for TLType.Trigger;
     using TLTable for TLType.Table;
@@ -100,7 +100,7 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
 
     function getTable(bytes32 tKey) external view returns (string memory name, string memory tsName,
         bytes32[] memory fields, bytes32[] memory triggers, bytes32[] memory indexes, uint32 replicas, uint32 ranges, address[] memory nodes) {
-        return s.getTable(tKey).export();
+        return s.getTable(tKey).export(s);
     }
 
     function deleteField(bytes32 tKey, bytes32 fKey) external {
@@ -175,17 +175,26 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
         return s.nmis;
     }
 
+    //DEBUG
+    function getQueue() external view returns (address[] memory) {
+        return s.queue;
+    }
+    //DEBUG
+    function getQueueHead() external view returns (uint) {
+        return s.queueHead;
+    }
+
     function getNode(address node) external view returns (bool inQueue, bytes32[] memory tables) {
-        return s.nm[node].export();
+        return s.nm[node].export(s);
     }
 
     function getTableNodes(bytes32 tKey) external view returns (address[] memory) {
-        return s.getTable(tKey).na;
+        return s.getTable(tKey).exportNodes(s);
     }
 
     function getNodeTableRanges(address node, bytes32 tKey) external view returns (uint64[] memory) {
         TLType.Node storage n = s.nm[node];
-        return n.getRangesPack(tKey);
+        return n.getRangesPack(s, tKey);
     }
 
     function tableToTablespace(bytes32 tKey) external view returns (bytes32) {

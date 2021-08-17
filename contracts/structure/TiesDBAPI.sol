@@ -24,6 +24,8 @@ interface TiesDBNodes {
     function unqueueNode(address _node) external;
     function deleteNode(address node) external;
     function displaceNode(address node) external returns (address);
+    function getQueue() external view returns (address[] memory);
+    function getQueueHead() external view returns (uint);
 }
 
 interface TiesDBSchema {
