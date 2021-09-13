@@ -1,4 +1,5 @@
 const TLStorage = artifacts.require("./TLStorage.sol");
+const TLPayments = artifacts.require("./TLPayments.sol");
 const TLTable = artifacts.require("./TLTable.sol"); 
 const TLTblspace = artifacts.require("./TLTblspace.sol");
 const TLNode = artifacts.require("./TLNode.sol"); 
@@ -32,11 +33,13 @@ module.exports = async function(deployer, network, accounts) {
   deployer.deploy(TLStorage);
   deployer.deploy(TLTable);
   deployer.deploy(TLTblspace);
+  deployer.deploy(TLPayments);
 
   deployer.link(TLNode, TiesDB);
   deployer.link(TLStorage, TiesDB);
   deployer.link(TLTable, TiesDB);
   deployer.link(TLTblspace, TiesDB);
+  deployer.link(TLPayments, TiesDB);
 
   deployer.then(function() {
     return deployer.deploy(TiesDB);
@@ -103,7 +106,7 @@ module.exports = async function(deployer, network, accounts) {
         registryContract.acceptRanges(true, {from: accounts[2]}),
         registryContract.acceptRanges(true, {from: accounts[3]}),
       ]);
-      console.debug('Accepted renges by nodes');
+      console.debug('Accepted ranges by nodes');
     });
   }
 

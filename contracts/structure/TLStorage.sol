@@ -196,10 +196,10 @@ library TLStorage {
 
     function getTable(TLType.Storage storage s, bytes32 tKey) internal view returns (TLType.Table storage) {
         bytes32 tsKey = s.table_to_tablespace[tKey];
-        require(tsKey != 0);
+        require(tsKey != 0, "Table or Tablespace does not exist");
         TLType.Tablespace storage ts = s.tsm[tsKey];
         TLType.Table storage table = ts.tm[tKey];
-        require(!table.isEmpty());
+        require(!table.isEmpty(), "Table does not exist");
         return table;
     }
 

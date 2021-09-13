@@ -2,13 +2,13 @@ pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./TLStorage.sol";
+import "./TLPayments.sol";
 import "./TLTblspace.sol";
 import "./TLTable.sol";
 import "./TLField.sol";
 import "./TLTrigger.sol";
 import "./TLNode.sol";
 import "./TLIndex.sol";
-
 
 contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
 
@@ -17,11 +17,27 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
     using TLTable for TLType.Table;
     using TLTblspace for TLType.Tablespace;
     using TLStorage for TLType.Storage;
+    using TLPayments for TLType.Payments;
     using TLNode for TLType.Node;
     using TLIndex for TLType.Index;
 
     TLType.Storage private s;
+    TLType.Payments private p;
     address private registry; //The registry contract that allows node manipulation
+
+    modifier onlyRegistry() {
+        require(msg.sender == registry, "Caller is not the registry");
+        _;
+    }
+
+    modifier onlyAuthorized(address owner) {
+        require(msg.sender == registry || msg.sender == owner, "Caller is not authorised");
+        _;
+    }
+    modifier tableExists(bytes32 tKey) {
+        require(this.hasTable(tKey), "Table or Tablespace does not exist");
+        _;
+    }
 
     function setRegistry (address registryAddress) onlyOwner public {
         registry = registryAddress;
@@ -142,10 +158,12 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
     }
 
     function createIndex(bytes32 tKey, string calldata iName, uint8 iType, bytes32[] calldata fields) external returns (bytes32) {
+        p.addPriceForIndex(tKey, iType);
         return s.getTable(tKey).createIndex(iName, iType, fields);
     }
 
     function deleteIndex(bytes32 tKey, bytes32 iKey) external {
+        p.removePriceForIndex(tKey, s.getTable(tKey).im[iKey].iType);
         s.getTable(tKey).deleteIndex(iKey);
     }
 
@@ -161,25 +179,14 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
         return s.getTable(tKey).im[iKey].export();
     }
 
-    modifier onlyRegistry() {
-        require(msg.sender == registry);
-        _;
-    }
-
-    modifier onlyAuthorized(address owner) {
-        require(msg.sender == registry || msg.sender == owner);
-        _;
-    }
-
     function getNodes() external view returns (address[] memory) {
         return s.nmis;
     }
 
-    //DEBUG
     function getQueue() external view returns (address[] memory) {
         return s.queue;
     }
-    //DEBUG
+
     function getQueueHead() external view returns (uint) {
         return s.queueHead;
     }
@@ -192,7 +199,7 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
         return s.getTable(tKey).exportNodes(s);
     }
 
-    function getNodeTableRanges(address node, bytes32 tKey) external view returns (uint64[] memory) {
+    function getNodeTableRanges(address node, bytes32 tKey) tableExists(tKey) external view returns (uint64[] memory) {
         TLType.Node storage n = s.nm[node];
         return n.getRangesPack(s, tKey);
     }
@@ -202,8 +209,19 @@ contract TiesDB is Ownable, TiesDBNodes, TiesDBSchema {
     }
 
     function distribute(bytes32 tKey, uint32 ranges, uint32 replicas) external {
-        require(uint(s.getTable(tKey).getPrimaryIndex()) != 0);
+        require(uint(s.getTable(tKey).getPrimaryIndex()) != 0, "Table primary key should exist");
         s.distributeRanges(tKey, ranges, replicas);
     }
 
+    // function redeemStorage(bytes32 tKey, address account, bytes16 session, uint crops, uint nonce) tableExists(tKey) external {
+    //     p.redeemStorage(registry, tKey, account, session, crops, nonce);
+    // }
+
+    function redeemOperation(address account, bytes16 session, bytes32 tKey, uint crops, uint nonce, bytes calldata signature) tableExists(tKey) external {
+        p.redeemOperation(s, TiesDBPayment(registry), tKey, account, session, crops, nonce, signature);
+    }
+
+    function getOperationRedeemed(address account, bytes16 session, bytes32 tKey) external view returns (uint crops, uint tokens, uint nonce) {
+        return p.getOperationRedeemed(tKey, account, session);
+    }
 }

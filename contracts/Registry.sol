@@ -9,7 +9,7 @@ import "./structure/TiesDBAPI.sol";
 
 // This contract manages all user deposits for TiesDB
 
-contract Registry is ERC23PayableReceiver {
+contract Registry is ERC23PayableReceiver, TiesDBPayment {
     using SafeMath for uint;
     /**
      * TIE tokens deposits
@@ -41,6 +41,16 @@ contract Registry is ERC23PayableReceiver {
     constructor(address _token, address _tiesDB) public {
         token = ERC20(_token);
         tiesDB = TiesDBNodes(_tiesDB);
+    }
+
+    function payFrom(address payer, address payee, uint amount) public returns (bool) {
+        require(msg.sender == address(tiesDB), "Payment authentication failure");
+        User storage user = users[payer];
+        require(amount <= user.deposit, "Insufficient user deposit");
+        Node storage node = nodes[payee];
+        require(node.deposit > 0, "Node deposit should be positive");
+        user.deposit -= amount;
+        return token.transfer(payee, amount);
     }
 
     function addUserDeposit(uint amount) public {

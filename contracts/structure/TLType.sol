@@ -66,6 +66,36 @@ library TLType {
         uint queueHead; //The head of the queue (0 based)
     }
 
+    struct Payments {
+        mapping(bytes32 => PaymentAccount) ap; //Account payments by table
+    }
+
+    struct PaymentAccount {
+        uint ocppn; //Crop operational price per node
+        uint scppn; //Crop storage price per node
+        uint mst; //Minimal storage time in seconds
+
+        mapping(address => PaymentSession) ps; //Payment sessions by user
+    }
+
+    struct PaymentSession {
+        mapping(bytes16 => StoragePayment) sps; //Storage payments by storage entry
+        mapping(bytes16 => Payment) ops; //Operationsl payments by session
+    }
+
+    struct StoragePayment {
+        Payment[] pmt; //Storage payments registered
+        uint pmtHead; //Next payment to be redeemed
+        bool isAlive; //Entry is actively stored
+        uint sonce; //Storage number one based
+    }
+
+    struct Payment {
+        uint crops; //Total crops redeemed
+        uint paidTokens; //Total tokens paid
+        uint nonce; //Payment number one based
+    }
+
     struct Ranges {
         uint idx; //One based
         Range[] ranges;

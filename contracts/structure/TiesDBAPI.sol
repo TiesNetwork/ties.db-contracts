@@ -18,6 +18,10 @@ interface TiesDBRestrictions {
     function canDeleteIndex(string calldata tsName, string calldata tName, string calldata iName, address owner) external view returns (bool);
 }
 
+interface TiesDBPayment {
+    function payFrom(address payer, address payee, uint amount) external returns (bool);
+}
+
 interface TiesDBNodes {
     function createNode(address _node) external;
     function queueNode(address _node) external;
