@@ -18,8 +18,12 @@ function asTokensDecimals(value, decimals) {
 }
 
 async function signPacked(account, ...args) {
+    //console.log('   Arguments: ', args);
     let hash = web3.utils.soliditySha3(...args);
-    return await web3.eth.personal.sign(hash, account);
+    console.log('        Hash: ', hash);
+    let sig = await web3.eth.personal.sign(hash, account);
+    console.log('   Signature: ', sig);
+    return sig;
 }
 
 async function zipWith(a1, a2, f) {
@@ -48,27 +52,31 @@ async function init(accounts) {
     await registry.acceptRanges(true, {from: accounts[2]});
     await registry.acceptRanges(true, {from: accounts[3]});
 
-    await token.mint(accounts[0], await asTokens(5000));
-    await token.transferAndPay(registry.address, await asTokens(500), "0x00000000", {from: accounts[0]});
-
     await token.mint(accounts[4], await asTokens(5000));
     let ethAmount = web3.utils.toWei(web3.utils.toBN(100), 'ether');
     await web3.eth.sendTransaction({from: accounts[0], to: accounts[4], value: ethAmount});
     await token.transferAndPay(registry.address, await asTokens(500), "0x00000001", {from: accounts[4]});
     await registry.acceptRanges(true, {from: accounts[4]});
 
-    return {tiesDB, noRestrictions, hashTblspc, hashTbl, registry, token};
+    return {tiesDB, noRestrictions, hashTblspc, hashTbl, registry, token, asTokens};
 }
 
 contract('TiesDB (redeem)', async function (accounts) {
-    let tiesDB, noRestrictions, hashTblspc, hashTbl, registry, token;
+    let tiesDB, noRestrictions, hashTblspc, hashTbl, registry, token, asTokens;
 
-    before(async function() {
-        ({tiesDB, noRestrictions, hashTblspc, hashTbl, registry, token} = await init(accounts));
+    before(async function () {
+        ({tiesDB, noRestrictions, hashTblspc, hashTbl, registry, token, asTokens} = await init(accounts));
     });
 
     it("should redeem operational", async function () {
+
         await tiesDB.distribute(hashTbl, 2, 2);
+
+        const signerAccount = accounts[0];
+
+        await token.mint(signerAccount, await asTokens(5000));
+        await token.transferAndPay(registry.address, await asTokens(5000), "0x00000000", {from: signerAccount});
+
         let tableNodes = await tiesDB.getTableNodes(hashTbl);
         assert.equal(4, tableNodes.length, "Wrong distributed nodes amount");
         assert.equal(accounts[1], tableNodes[0], "Wrong node distributed");
@@ -76,25 +84,39 @@ contract('TiesDB (redeem)', async function (accounts) {
         assert.equal(accounts[3], tableNodes[2], "Wrong node distributed");
         assert.equal(accounts[4], tableNodes[3], "Wrong node distributed");
 
+        console.log('        TiesDB:', tiesDB.address);
+        console.log('NoRestrictions:', noRestrictions.address);
+        console.log('       Node[1]:', tableNodes[0]);
+        console.log('       Node[2]:', tableNodes[1]);
+        console.log('       Node[3]:', tableNodes[2]);
+        console.log('       Node[4]:', tableNodes[3]);
+        console.log();
+
         let session = "0xb0eeb7dc55d14f49bbde6aeb2de85807";
 
+        console.log('  TiesDB Address: ', tiesDB.address);
+        console.log('          Signer: ', signerAccount);
+        console.log('         Session: ', session);
+        console.log('    TiesDB Table: ', hashTbl);
+        console.log();
+
         try {
-            let sig = await signPacked(accounts[0],
-                { t: 'address', v: registry.address },
-                { t: 'address', v: accounts[0] },
+            let sig = await signPacked(signerAccount,
+                { t: 'address', v: tiesDB.address },
+                { t: 'address', v: signerAccount },
                 { t: 'bytes16', v: session },
                 { t: 'bytes32', v: hashTbl },
                 { t: 'uint', v: 9 },
                 { t: 'uint', v: 1 },
             );
-            await tiesDB.redeemOperation(accounts[0], session, hashTbl, 10, 1, sig);
+            await tiesDB.redeemOperation(signerAccount, session, hashTbl, 10, 1, sig);
             assert.fail("Transaction should not be accepted");
         } catch (error) {
             assert.ok(undefined != error);
         }
         
         {
-            let userDeposit = await registry.getUserDeposit(accounts[0]);
+            let userDeposit = await registry.getUserDeposit(signerAccount);
             console.log('  User deposit before: ', userDeposit.toString());
 
             let nodeBalances = await Promise.all(tableNodes.map(async node => {
@@ -103,17 +125,17 @@ contract('TiesDB (redeem)', async function (accounts) {
                 return nodeBalance;
             }));
 
-            let sig = await signPacked(accounts[0],
-                { t: 'address', v: registry.address },
-                { t: 'address', v: accounts[0] },
+            let sig = await signPacked(signerAccount,
+                { t: 'address', v: tiesDB.address },
+                { t: 'address', v: signerAccount },
                 { t: 'bytes16', v: session },
                 { t: 'bytes32', v: hashTbl },
                 { t: 'uint', v: 10 },
                 { t: 'uint', v: 1 },
             );
-            let result = await tiesDB.redeemOperation(accounts[0], session, hashTbl, 10, 1, sig);
+            let result = await tiesDB.redeemOperation(signerAccount, session, hashTbl, 10, 1, sig);
             console.log('  Gas used for redeeming: ', result.receipt.gasUsed);
-            let userDepositAfter = await registry.getUserDeposit(accounts[0]);
+            let userDepositAfter = await registry.getUserDeposit(signerAccount);
             console.log('  User deposit after:  ', userDepositAfter.toString());
 
             let nodeBalancesDelta = await Promise.all(tableNodes.map(async (node, i) => {
@@ -134,51 +156,51 @@ contract('TiesDB (redeem)', async function (accounts) {
                 "User deposit delta does not match all nodes balance delta");
 
             let crops, tokens, nonce;
-            ({crops, tokens, nonce} = await tiesDB.getOperationRedeemed(accounts[0], session, hashTbl));
+            ({crops, tokens, nonce} = await tiesDB.getOperationRedeemed(signerAccount, session, hashTbl));
             assert.equal(10, crops.toString(), "Wrong crops amount redeemed");
             assert.equal(tokens.toString(), nodeBalancesDeltaTotal.toString(), "Wrong tokens amount redeemed");
             assert.equal(1, nonce.toString(), "Wrong crops nonce redeemed");
         }
         try {
-            let sig = await signPacked(accounts[0],
-                { t: 'address', v: registry.address },
-                { t: 'address', v: accounts[0] },
+            let sig = await signPacked(signerAccount,
+                { t: 'address', v: tiesDB.address },
+                { t: 'address', v: signerAccount },
                 { t: 'bytes16', v: session },
                 { t: 'bytes32', v: hashTbl },
                 { t: 'uint', v: 10 },
                 { t: 'uint', v: 2 },
             );
-            await tiesDB.redeemOperation(accounts[0], session, hashTbl, 10, 2, sig);
+            await tiesDB.redeemOperation(signerAccount, session, hashTbl, 10, 2, sig);
             assert.fail("Transaction should not be accepted");
         } catch (error) {
             assert.ok(undefined != error);
         }
         try {
-            let sig = await signPacked(accounts[0],
-                { t: 'address', v: registry.address },
-                { t: 'address', v: accounts[0] },
+            let sig = await signPacked(signerAccount,
+                { t: 'address', v: tiesDB.address },
+                { t: 'address', v: signerAccount },
                 { t: 'bytes16', v: session },
                 { t: 'bytes32', v: hashTbl },
                 { t: 'uint', v: 11 },
                 { t: 'uint', v: 1 },
             );
-            await tiesDB.redeemOperation(accounts[0], session, hashTbl, 11, 1, sig);
+            await tiesDB.redeemOperation(signerAccount, session, hashTbl, 11, 1, sig);
             assert.fail("Transaction should not be accepted");
         } catch (error) {
             assert.ok(undefined != error);
         }
         {
-            let sig = await signPacked(accounts[0],
-                { t: 'address', v: registry.address },
-                { t: 'address', v: accounts[0] },
+            let sig = await signPacked(signerAccount,
+                { t: 'address', v: tiesDB.address },
+                { t: 'address', v: signerAccount },
                 { t: 'bytes16', v: session },
                 { t: 'bytes32', v: hashTbl },
                 { t: 'uint', v: 100 },
                 { t: 'uint', v: 10 },
             );
-            await tiesDB.redeemOperation(accounts[0], session, hashTbl, 100, 10, sig);
+            await tiesDB.redeemOperation(signerAccount, session, hashTbl, 100, 10, sig);
         }
-        ({crops, tokens, nonce} = await tiesDB.getOperationRedeemed(accounts[0], session, hashTbl));
+        ({crops, tokens, nonce} = await tiesDB.getOperationRedeemed(signerAccount, session, hashTbl));
         assert.equal(100, crops, "Wrong crops amount redeemed");
         assert.equal(10, nonce, "Wrong crops nonce redeemed");
     });

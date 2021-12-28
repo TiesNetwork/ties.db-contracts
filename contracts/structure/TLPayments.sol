@@ -41,7 +41,7 @@ library TLPayments {
 
     function redeemOperation(TLType.Payments storage p, TLType.Storage storage s, TiesDBPayment registry, bytes32 tKey, address account, bytes16 session,
         uint crops, uint nonce, bytes memory signature) public {
-        require(account == recoverSigner(abi.encodePacked(registry, account, session, tKey, crops, nonce), signature), "Wrong signature");
+        require(account == recoverSigner(abi.encodePacked(this, account, session, tKey, crops, nonce), signature), "Wrong signature");
         TLType.PaymentAccount storage pa = p.ap[tKey];
         TLType.Payment storage op = pa.ps[account].ops[session];
         uint tokensToPayPerNode = updatePayment(op, crops, nonce) * pa.ocppn;
