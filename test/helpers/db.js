@@ -1,7 +1,6 @@
 function getHash(name){
-    let hash = web3.sha3(name);
-    let bn = web3.toAscii(hash);
-    return bn;
+    let hash = web3.utils.keccak256(name);
+    return hash;
 }
 
 function getTableHash(tblspc, tbl){

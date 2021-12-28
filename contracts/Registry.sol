@@ -1,14 +1,15 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.5.0;
 
 
-import "localhost/zeppelin/contracts/token/ERC20.sol";
-import "localhost/zeppelin/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+
 import "./include/ERC23PayableReceiver.sol";
 import "./structure/TiesDBAPI.sol";
 
 // This contract manages all user deposits for TiesDB
 
-contract Registry is ERC23PayableReceiver {
+contract Registry is ERC23PayableReceiver, TiesDBPayment {
     using SafeMath for uint;
     /**
      * TIE tokens deposits
@@ -37,21 +38,31 @@ contract Registry is ERC23PayableReceiver {
     ERC20 public token;
     TiesDBNodes public tiesDB;
 
-    function Registry(address _token, address _tiesDB) public {
+    constructor(address _token, address _tiesDB) public {
         token = ERC20(_token);
         tiesDB = TiesDBNodes(_tiesDB);
+    }
+
+    function payFrom(address payer, address payee, uint amount) public returns (bool) {
+        require(msg.sender == address(tiesDB), "Payment authentication failure");
+        User storage user = users[payer];
+        require(amount <= user.deposit, "Insufficient user deposit");
+        Node storage node = nodes[payee];
+        require(node.deposit > 0, "Node deposit should be positive");
+        user.deposit -= amount;
+        return token.transfer(payee, amount);
     }
 
     function addUserDeposit(uint amount) public {
         //If there is no allowance or not enough tokens it will throw
         users[msg.sender].deposit = users[msg.sender].deposit.add(amount);
-        assert(token.transferFrom(msg.sender, address(this), amount));
+        require(token.transferFrom(msg.sender, address(this), amount), "Token transfer failure adding user deposit");
     }
 
     function addNodeDeposit(uint amount) public {
         //If there is no allowance or not enough tokens it will throw
-        addNodeDeposit(msg.sender, amount);
-        assert(token.transferFrom(msg.sender, address(this), amount));
+        _addNodeDeposit(msg.sender, amount);
+        require(token.transferFrom(msg.sender, address(this), amount), "Token transfer failure adding node deposit");
     }
 
     /// Gets the deposit of the specified user
@@ -65,39 +76,46 @@ contract Registry is ERC23PayableReceiver {
     }
 
     /// Gets the amount sent to the beneficiary by the specified user
-    function getSent(address user, address beneficiary) public constant returns (uint) {
+    function getSent(address user, address beneficiary) public view returns (uint) {
         return users[user].sent[beneficiary].sent;
     }
 
-    function wtf(bool condition, string msg) internal returns (bool){
-        if(!condition)
-            Error(msg);
+    function wtf(string memory message) internal returns (bool){
+        return wtf(true, message);
+    }
+
+    function wtf(bool condition, string memory message) internal returns (bool){
+        require(!condition, message);
+        // If require was not fired
+        if(condition) {
+            emit Error(message);
+        }
         return condition;
     }
-    
-    function tokenFallback(address _from, uint _value, bytes _data) public payable {
-        if(wtf(msg.sender == address(token), "Wrong token")) return;
-        if(wtf(msg.value == 0, "Wrong value")) //Do not accept ether
+
+    function tokenFallback(address _from, uint _value, bytes memory _data) public payable {
+        if(wtf(msg.sender != address(token), "Wrong token")) return;
+        if(wtf(msg.value != 0, "Registry does not accept ether")) //Do not accept ether
             return;
         
         if (_data.length >= 4) {
-            var val = (((((uint32(_data[0]) << 8) + uint32(_data[1])) << 8) + uint32(_data[2])) << 8) + uint32(_data[3]);
+            uint32 val = (((((uint8(_data[0]) << 8) + uint8(_data[1])) << 8) + uint8(_data[2])) << 8) + uint8(_data[3]);
 
             if (val == 0) {
-                addUserDeposit(_from, _value);
+                _addUserDeposit(_from, _value);
             } else if (val == 1) {
-                addNodeDeposit(_from, _value);
+                _addNodeDeposit(_from, _value);
             } else {
-                wtf(false, "Wrong data"); //Currently can only accept data with 0x 00 00 00 xx
+                wtf("Wrong data"); //Currently can only accept data with 0x 00 00 00 xx
             }
         } else {
 
-            if(wtf(_data.length == 0, "Non empty data")) //Data should not be here!
+            if(wtf(_data.length > 0, "Non empty data")) //Data should not be here!
                 return;
             
-            addUserDeposit(_from, _value);
+            _addUserDeposit(_from, _value);
         }
-        wtf(false, "Was in tokenFallback");
+        // wtf("Was in tokenFallback");
     }
 
     /**
@@ -108,7 +126,7 @@ contract Registry is ERC23PayableReceiver {
         uint8 sigv, bytes32 sigr, bytes32 sigs) public returns (uint) {
 
         Node storage node = nodes[beneficiary];
-        require(node.deposit > 0);
+        require(node.deposit > 0, "Node deposit should be positive");
 
         User storage u = users[issuer];
         Redeem storage r = u.sent[beneficiary];
@@ -116,14 +134,14 @@ contract Registry is ERC23PayableReceiver {
         // Check if the cheque is old.
         // Only cheques that are more recent than the last cashed one are considered.
         if (amount <= r.sent || lastTimeStamp < r.lastTimeStamp ) {
-            Error("Cheque was already redeemed");
+            emit Error("Cheque was already redeemed");
             return 0; //revert();
         }
 
         // Check the digital signature of the cheque.
-        bytes32 hash = keccak256("TIE cheque", issuer, beneficiary, amount, lastTimeStamp);
+        bytes32 hash = keccak256(abi.encodePacked("TIE cheque", issuer, beneficiary, amount, lastTimeStamp));
         if (issuer != ecrecover(hash, sigv, sigr, sigs)) {
-            Error("Signature check failed");
+            emit Error("Signature check failed");
             return 0; //revert();
         }
 
@@ -139,7 +157,7 @@ contract Registry is ERC23PayableReceiver {
             u.deposit = 0;
             token.transfer(beneficiary, tosend);
 
-            Overdraft(issuer);
+            emit Overdraft(issuer);
         } else {
             //User has enough tokens to pay the cheque
             r.sent = amount;
@@ -147,29 +165,29 @@ contract Registry is ERC23PayableReceiver {
             token.transfer(beneficiary, tosend);
         }
 
-        ChequeRedeemed(issuer, beneficiary, amount, amount-r.sent, tosend);
+        emit ChequeRedeemed(issuer, beneficiary, amount, amount-r.sent, tosend);
 
         return tosend;
     }
 
-    function addUserDeposit(address from, uint amount) internal {
-        require(amount > 0);
+    function _addUserDeposit(address from, uint amount) internal {
+        require(amount > 0, "User topup amount should be positive");
         users[from].deposit = users[from].deposit.add(amount);
     }
 
-    function addNodeDeposit(address from, uint amount) internal {
-        require(amount > 0);
+    function _addNodeDeposit(address from, uint amount) internal {
+        require(amount > 0, "Node topup amount should be positive");
         nodes[from].deposit = nodes[from].deposit.add(amount);
         tiesDB.createNode(from);
     }
 
     function acceptRanges(bool accept) public {
-        var from = msg.sender;
-        require(nodes[from].deposit > 0);
+        address from = msg.sender;
+        require(nodes[from].deposit > 0, "Node has zero deposit");
 
-        if(accept){
+        if (accept) {
             tiesDB.queueNode(from);
-        }else{
+        } else {
             tiesDB.unqueueNode(from);
         }
     }

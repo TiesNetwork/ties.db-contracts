@@ -7,12 +7,16 @@
     "test": "test"
   },
   "scripts": {
-    "test": "truffle test"
+    "test": "truffle test",
+    "migrate": "truffle migrate"
   },
   "author": "Dmitry Kochin <k@ties.network>",
   "license": "ISC",
   "devDependencies": {
-    "ethereumjs-util": "^5.1.2",
-    "web3-eth-abi": "^1.0.0-beta.27"
+    "ethereumjs-util": "^5.2.0"
+  },
+  "dependencies": {
+    "openzeppelin-solidity": "^2.1.2",
+    "truffle": "^5.0.4"
   }
 }

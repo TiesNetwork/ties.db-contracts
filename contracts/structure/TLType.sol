@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.5.0;
 
 import "./TiesDBAPI.sol";
 
@@ -6,7 +6,7 @@ import "./TiesDBAPI.sol";
 library TLType {
 
     struct Trigger {
-        uint256 idx; //Trigger mapping index, one based
+        uint idx; //Trigger mapping index, one based
         Table t;
         string name;
 
@@ -14,7 +14,7 @@ library TLType {
     }
 
     struct Field {
-        uint256 idx; //One based
+        uint idx; //One based
         Table t;
         string name;
 
@@ -23,7 +23,7 @@ library TLType {
     }
 
     struct Table {
-        uint256 idx; //One based
+        uint idx; //One based
         Tablespace ts;
         string name;
 
@@ -39,15 +39,16 @@ library TLType {
         uint32 replicas;
         uint32 ranges;
 
-        address[] nodes; //Nodes storing the table
+        uint[] nid; //Node global ids (0 based)
+        mapping(uint => uint) nidm; //Node global id mapping (1 based) subtraction needed
     }
 
     struct Tablespace {
-        uint256 idx; //One based
+        uint idx; //One based
         TiesDBRestrictions rs;
         string name;
-        bytes32[] tmis;
-        mapping(bytes32 => Table) tm;
+        bytes32[] tmis; //Table hash mapping index
+        mapping(bytes32 => Table) tm; //Table hash mapping
     }
 
     struct Storage {
@@ -56,10 +57,43 @@ library TLType {
         mapping(bytes32 => bytes32) table_to_tablespace; //Table to tablespace relation
 
         address[] nmis; //Nodes mapping ids
+        mapping(address => uint[]) nim; //Nodes id mapping (1 based) subtraction needed
         mapping(address => Node) nm; //Nodes mapping
 
+        mapping(uint => TableRangeMap) trm; //Map of table ranges for node id
+
         address[] queue; //Queue for registering ranges
-        uint128 queue_head; //The head of the queue (0 based)
+        uint queueHead; //The head of the queue (0 based)
+    }
+
+    struct Payments {
+        mapping(bytes32 => PaymentAccount) ap; //Account payments by table
+    }
+
+    struct PaymentAccount {
+        uint ocppn; //Crop operational price per node
+        uint scppn; //Crop storage price per node
+        uint mst; //Minimal storage time in seconds
+
+        mapping(address => PaymentSession) ps; //Payment sessions by user
+    }
+
+    struct PaymentSession {
+        mapping(bytes16 => StoragePayment) sps; //Storage payments by storage entry
+        mapping(bytes16 => Payment) ops; //Operationsl payments by session
+    }
+
+    struct StoragePayment {
+        Payment[] pmt; //Storage payments registered
+        uint pmtHead; //Next payment to be redeemed
+        bool isAlive; //Entry is actively stored
+        uint sonce; //Storage number one based
+    }
+
+    struct Payment {
+        uint crops; //Total crops redeemed
+        uint paidTokens; //Total tokens paid
+        uint nonce; //Payment number one based
     }
 
     struct Ranges {
@@ -73,15 +107,17 @@ library TLType {
     }
 
     struct Node {
-        uint128 idx; //Index in all nodes array (1 based)
-        int128 queue_idx; //Index in queue (1 based)
+        uint idx; //Index in all nodes array (1 based)
+        uint queueIdx; //Index in queue (1 based)
+    }
 
-        mapping(bytes32 => Ranges) trm; //Table range mapping: tKey => Ranges
-        bytes32[] tmis; //Tables mapping indexes
+    struct TableRangeMap {
+        bytes32[] idx; //Tables range mapping indexes
+        mapping(bytes32 => Ranges) map; //Table range mapping: tKey => Ranges
     }
 
     struct Index {
-        uint128 idx; //One based
+        uint idx; //One based
         uint8 iType; //0 - empty, 0x1 - primary, 0x2 - internal, 0x4 - external
 
         string name;

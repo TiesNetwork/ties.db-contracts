@@ -1,4 +1,8 @@
-node_modules
-.idea
-installed_contracts
-build
+/.idea/
+/.vscode/
+/node_modules/
+/package-lock.json
+/build/
+/target/
+/bin/
+/installed_contracts/
